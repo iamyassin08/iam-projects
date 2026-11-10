@@ -10,7 +10,7 @@ const MODULES = [
     problem: 'People join, change jobs and leave every week. Access must follow them — on day one, on the day of a move, and on the last day.',
     assumptions: ['HR (Workday) is the source of truth for who works here and in what job.', 'Each job maps to exactly one role that defines birthright access.', 'A leaver must lose everything the same day.'],
     build: ['Joiner: create identity, grant role entitlements.', 'Mover: grant new-role access, revoke anything outside it — including request-based extras.', 'Leaver: disable, revoke all, cancel open requests.'],
-    test: ['Onboard a joiner and confirm their grants equal the role.', 'Move Amina from Software Engineer to Revenue Cycle Analyst; confirm aws-dev and gh-member are gone.', 'Terminate someone; run checks C1 and C2.'],
+    test: ['Onboard a joiner and confirm their grants equal the role.', 'Move Omar Farouk from Software Engineer to Revenue Cycle Analyst; confirm aws-dev and gh-member are gone.', 'Terminate someone; run checks C1 and C2.'],
     improve: ['Drive JML from HR events (webhook) instead of a form.', 'Add pre-hire accounts with a disabled-until-start-date flag.', 'Keep leaver mailboxes for 30 days under manager delegation.'],
     checks: ['C1', 'C2'],
   },
