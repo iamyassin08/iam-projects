@@ -39,7 +39,7 @@ iam-projects/
 ├── server/
 │   ├── main.go             # HTTP routes + JML / request / role logic
 │   ├── store.go            # domain types, JSON store, SoD + grant helpers
-│   └── seed.go             # demo tenant (10 systems, 18 entitlements, 7 roles, 8 people, 4 SoD rules)
+│   └── seed.go             # demo tenant (10 systems, 18 entitlements, 7 roles, 7 people, 4 SoD rules)
 ├── web/
 │   └── src/
 │       ├── App.jsx         # home screen (the 4 project cards) + navigation
