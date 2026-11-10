@@ -15,7 +15,7 @@ serving both the API and the UI.
    - Destination path: `/data`
 
    Without the volume, all demo changes are lost on every redeploy.
-6. **Domains:** set your domain, for example `https://iam.yourdomain.com`. Coolify issues the TLS certificate.
+6. **Domains:** set your domain, for example `https://iam.assafwahinc.com`. Coolify issues the TLS certificate.
 7. **Environment variables** (optional, these are the defaults):
 
    | Variable | Default |
@@ -30,8 +30,8 @@ serving both the API and the UI.
 ## Verify
 
 ```bash
-curl https://iam.yourdomain.com/api/health      # {"status":"ok"}
-curl https://iam.yourdomain.com/api/lab/checks  # 7 control results
+curl https://iam.assafwahinc.com/api/health      # {"status":"ok"}
+curl https://iam.assafwahinc.com/api/lab/checks  # 14 control results
 ```
 
 Open the site and you should see the home screen with the four project cards.

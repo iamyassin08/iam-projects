@@ -48,10 +48,37 @@ others) only label the *type* of system. Nothing here connects to a real service
 Every grant, revoke, decision and role change is written with actor, action, target and detail. The log can
 be filtered and exported to CSV. This is what you hand an auditor for an access review or a SOX/HIPAA sample.
 
+## SCIM → automated provisioning
+
+- **SCIM 2.0** is the standard API an IdP uses to create, update and disable accounts in an app. Without it, deprovisioning depends on tickets.
+- Here, a SCIM client drives the same lifecycle code as the UI: create = joiner, group membership = mover, `active:false` = leaver.
+- Provisioning credentials are secrets. They are hashed at rest, revocable and rotated (control C14).
+
+## Access reviews → certification
+
+- A **user access review** (UAR) asks a manager to re-justify each grant. SOX auditors sample these campaigns.
+- *Revoke on non-response* stops rubber-stamping through silence. Evidence export gives the auditor who decided what, when and why.
+
+## JIT → privileged access management
+
+- **Zero standing privilege**: admins hold *eligibility*, not access. Activation is time-boxed, ticketed and audited (Entra PIM, CyberArk, AWS IAM Identity Center temporary elevation).
+- **Break-glass** accounts exist for when the normal path is down. They bypass approval, so every use is reviewed.
+
+## Reconciliation and risk
+
+- **Orphan account**: an enabled account with no current owner, usually a leaver in a system that wasn't deprovisioned.
+- **Rogue access**: access created directly in the app, outside IAM, so nobody approved it.
+- **Dormant access**: granted but unused. It is the cheapest risk to remove.
+- **Identity risk scoring** turns these signals into a prioritized worklist. This model is additive and explainable on purpose: analysts need to know *why* someone is high-risk.
+
 ## Skills this demonstrates
 
 - Lifecycle automation (JML) and why the mover case matters most.
 - Access request design with SoD-aware approvals.
 - RBAC role design and least privilege.
 - Application inventory, federation and provisioning methods.
-- Writing controls as testable assertions (`server/lab.go`).
+- SCIM 2.0 service provider design (RFC 7643/7644) and IdP interoperability.
+- Access certification campaigns with revoke-on-non-response.
+- Just-in-time privileged access with expiry enforcement and break-glass.
+- Account reconciliation (orphan, rogue, dormant) and explainable risk scoring.
+- Writing controls as testable assertions mapped to NIST SP 800-53, SOX and HIPAA (`server/lab.go`, `docs/CONTROLS.md`).

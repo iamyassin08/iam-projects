@@ -11,7 +11,7 @@ uses, not to build a perfect product.
 | **Test** | How do we prove it works — and which control check backs it up? |
 | **Improve** | What would v2 look like in a real environment? |
 
-The **Lab guide** page (`#lab`) shows all of this live, runs the control checks against the current
+The **Controls lab** page (`#lab`) shows all of this live, runs the control checks against the current
 state, and exports a Markdown write-up (`iam-lab-writeup.md`) you can attach to a portfolio or interview.
 
 ---
@@ -127,24 +127,112 @@ with a record an auditor can sample later.
 
 ---
 
-## The 7 control checks
+## 5. SCIM 2.0 provisioning (`#scim`)
 
-`GET /api/lab/checks` (implemented in `server/lab.go`) runs read-only assertions over the current state:
+**Problem.** The IdP, not a person, should create and remove accounts. Every app that can't accept SCIM becomes a manual ticket.
 
-| ID | Control | Module |
-|---|---|---|
-| C1 | Terminated identities hold zero access | JML |
-| C2 | Role-based access matches the current role | JML |
-| C3 | Every extra grant has an approved request | Requests |
-| C4 | SoD conflicts have a documented risk acceptance | Requests |
-| C5 | No role bakes in an SoD conflict | Roles |
-| C6 | Privileged access is requested, not birthright | Roles |
-| C7 | Every system is owned and automatically provisioned | Systems |
+**Assumptions**
+- Users map to identities; Groups map to RBAC roles.
+- The IdP authenticates with a long random bearer token.
+- IdPs differ: Entra ID sends `"Replace"` and `"False"` as strings.
 
-The seed tenant starts at **5/7 passing** on purpose. C6 and C7 are findings for you to fix.
+**Build**
+- RFC 7644 `/Users` and `/Groups` with filter, paging and PATCH; discovery endpoints; SCIM error schema.
+- `active=false` or `DELETE` runs the leaver flow; a group add runs the mover flow.
+- Tokens hashed with SHA-256, compared in constant time, revocable. See [`SCIM.md`](SCIM.md).
 
-## Visuals on the Lab page
+**Test**
+1. Generate a token, `POST /Users` with `groups:[{"value":"r-ap"}]`, and confirm birthright grants.
+2. `PATCH active "False"` Entra-style; C1 still passes.
+3. Revoke the token; the next call returns 401.
 
-- **AuthN vs AuthZ.** Authentication proves who you are (SAML, OIDC, MFA). Authorization decides what you can do (roles, entitlements, policies). This lab is mostly AuthZ.
-- **Policy binding.** Identity → role → entitlement. A grant's `source` is either `role` (birthright) or `request`.
-- **Resource hierarchy.** Organization → system → entitlement. Permissions live on resources inside systems.
+**Improve:** OAuth 2.0 client credentials, ETags, a bulk endpoint for initial loads.
+
+**Controls:** C14 (token rotation), C1.
+
+---
+
+## 6. Access reviews (`#certifications`)
+
+**Problem.** Access accumulates. Auditors expect every in-scope grant to be re-justified periodically by someone accountable.
+
+**Assumptions**
+- The manager reviews their reports' access.
+- A revoke must remove access, not just record an opinion.
+- Silence is not approval.
+
+**Build**
+- Campaigns snapshot grants by scope: all, privileged, exceptions only, or a single app. JIT grants are excluded because they are reviewed per session.
+- Revoking birthright records an *exclusion* so role re-syncs don't re-grant it (C2 honours it).
+- Closing with *revoke on non-response* removes everything undecided. Export CSV evidence.
+
+**Test**
+1. In the Q4 privileged review, revoke Sofia Alvarez's Domain Admin (unused 210 days). C12 passes.
+2. Launch an all-access campaign, decide a few items, and close it. Undecided items are revoked.
+
+**Improve:** multi-level reviews (manager, then app owner), reminders and delegation, risk-triggered micro-certifications.
+
+**Controls:** C13 (reviews finish on time).
+
+---
+
+## 7. Just-in-time privileged access (`#pam`)
+
+**Problem.** Standing admin rights are the most valuable thing an attacker can steal, and most of the time nobody needs them.
+
+**Assumptions**
+- Admins are *eligible*, not assigned.
+- Every activation has a ticket and a time limit.
+- Emergencies happen, so break-glass exists, and it is reviewed afterwards.
+
+**Build**
+- Eligibility with a per-assignment maximum duration.
+- Activation creates a `jit` grant with `expiresAt`; a goroutine sweeps expired grants every 15 seconds.
+- Break-glass skips eligibility and ticket checks, is capped at 60 minutes, and is flagged until reviewed.
+- Elevations that would complete an SoD pair are refused.
+
+**Test**
+1. Activate Yusuf Ali's ServiceNow Platform Admin for 5 minutes and watch it expire.
+2. Try Omar Farouk's AWS admin: refused, because his birthright `aws-dev` plus `aws-admin` breaks sod-3.
+3. Review the seeded break-glass session. C9 passes.
+
+**Improve:** approval for high-risk roles, session recording, credential vaulting.
+
+**Controls:** C8 (expiry enforced), C9 (break-glass reviewed), C6.
+
+---
+
+## 8. Risk & reconciliation (`#risk`)
+
+**Problem.** IAM only knows what it granted. Accounts created directly in apps, and accounts that deprovisioning missed, are invisible without reconciliation.
+
+**Assumptions**
+- Target systems can be read, even when IAM can't write to them.
+- Every account maps to an identity, or to an owner if it is a service account.
+- Unused privilege is risk without benefit.
+
+**Build**
+- Classify target accounts as **orphan** (no HR match, or owner terminated), **rogue** (access the IAM never granted) or **unowned service**, with severity.
+- Remediate by disable, assign owner, or adopt as a retro-approved request. Adoption is refused if it would legitimise an SoD violation.
+- An additive risk score per identity where every point traces to a factor.
+
+**Test**
+1. Disable `mlee.clinical` (rogue Epic clinical access that breaks sod-4). Marcus Lee drops from 60.
+2. Assign an owner to `svc-legacy-deploy`; disable `j.ortega` and `dbrooks-sales`. C10 and C11 pass.
+3. Terminate Marcus Lee: his Epic account (a manual system) reappears as an orphan.
+
+**Improve:** real read connectors, peer-group outlier analysis, feeding risk into review campaigns.
+
+**Controls:** C10, C11, C12.
+
+---
+
+## The 14 control checks
+
+`GET /api/lab/checks` runs every control in [`server/lab.go`](../server/lab.go) against the current state. The seed tenant starts at **8 / 14** on purpose. The full list, framework mapping and the seeded findings are in [`CONTROLS.md`](CONTROLS.md).
+
+## Visuals on the Controls lab page
+
+- **AuthN vs AuthZ.** Authentication proves who you are (SAML, OIDC, MFA). Authorization decides what you can do (roles, entitlements, policy). This platform is mostly AuthZ, fed by an IdP that does AuthN.
+- **Policy binding.** Identity → role / request / JIT → entitlement. Every grant records its `source`, so provenance is always auditable.
+- **Resource hierarchy.** Organization → system → entitlement. Least privilege lives at the bottom.
