@@ -58,7 +58,6 @@ func Seed() *State {
 	}
 
 	people := []Identity{
-		{Name: "Amina Hassan", Email: "amina.hassan@demo.local", Department: "Engineering", Title: "Software Engineer II", Manager: "Omar Farouk", RoleID: "r-eng", StartDate: "2025-03-03"},
 		{Name: "Omar Farouk", Email: "omar.farouk@demo.local", Department: "Engineering", Title: "Engineering Manager", Manager: "Leila Nasser", RoleID: "r-eng", StartDate: "2023-08-14"},
 		{Name: "Daniel Brooks", Email: "daniel.brooks@demo.local", Department: "Sales", Title: "Account Executive", Manager: "Leila Nasser", RoleID: "r-sales", StartDate: "2024-01-08"},
 		{Name: "Priya Raman", Email: "priya.raman@demo.local", Department: "Finance", Title: "AP Specialist", Manager: "Grace Kim", RoleID: "r-ap", StartDate: "2024-06-17"},
@@ -77,13 +76,13 @@ func Seed() *State {
 		s.JMLEvents = append(s.JMLEvents, JMLEvent{s.nextID("JML"), "joiner", p.ID, p.Name + " joined as " + p.Title, s.role(p.RoleID).Entitlements, []string{}, p.StartDate + "T09:00:00Z"})
 	}
 	// An approved, request-based extra grant (shows up in access reviews)
-	s.Grants = append(s.Grants, Grant{"ID-8", "aws-admin", "request", "2026-09-02T15:00:00Z"})
+	s.Grants = append(s.Grants, Grant{"ID-7", "aws-admin", "request", "2026-09-02T15:00:00Z"})
 	s.Requests = append(s.Requests,
-		AccessRequest{s.nextID("REQ"), "ID-8", "aws-admin", "Break-glass for IdP SCIM connector rotation", "approved", "", "2026-09-02T14:10:00Z", "leila.nasser", "2026-09-02T15:00:00Z", "Time-boxed, review in 90 days"},
-		AccessRequest{s.nextID("REQ"), "ID-4", "erp-approve", "Cover Grace's approvals during PTO", "pending", "sod-2: Same person can enter and approve a payment", "2026-11-06T16:20:00Z", "", "", ""},
-		AccessRequest{s.nextID("REQ"), "ID-3", "sf-admin", "Need to edit page layouts for my team", "pending", "", "2026-11-07T10:05:00Z", "", "", ""},
+		AccessRequest{s.nextID("REQ"), "ID-7", "aws-admin", "Break-glass for IdP SCIM connector rotation", "approved", "", "2026-09-02T14:10:00Z", "leila.nasser", "2026-09-02T15:00:00Z", "Time-boxed, review in 90 days"},
+		AccessRequest{s.nextID("REQ"), "ID-3", "erp-approve", "Cover Grace's approvals during PTO", "pending", "sod-2: Same person can enter and approve a payment", "2026-11-06T16:20:00Z", "", "", ""},
+		AccessRequest{s.nextID("REQ"), "ID-2", "sf-admin", "Need to edit page layouts for my team", "pending", "", "2026-11-07T10:05:00Z", "", "", ""},
 		AccessRequest{s.nextID("REQ"), "ID-1", "aws-readonly", "Debug prod logs during on-call", "pending", "", "2026-11-08T08:45:00Z", "", "", ""},
 	)
-	s.audit("system", "seed", "tenant", "Demo tenant created with 8 identities, 7 roles, 10 systems")
+	s.audit("system", "seed", "tenant", "Demo tenant created with 7 identities, 7 roles, 10 systems")
 	return s
 }
