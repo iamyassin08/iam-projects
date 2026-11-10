@@ -10,12 +10,32 @@ import (
 // auditor would ask about. Run them after every JML / request / role change.
 
 type CheckResult struct {
-	ID       string   `json:"id"`
-	Control  string   `json:"control"`
-	Why      string   `json:"why"`
-	Module   string   `json:"module"`
-	Pass     bool     `json:"pass"`
-	Findings []string `json:"findings"`
+	ID         string   `json:"id"`
+	Control    string   `json:"control"`
+	Why        string   `json:"why"`
+	Module     string   `json:"module"`
+	Frameworks []string `json:"frameworks"` // NIST SP 800-53 r5, SOX ITGC, HIPAA Security Rule
+	Pass       bool     `json:"pass"`
+	Findings   []string `json:"findings"`
+}
+
+// Framework references per control. These are the citations an auditor would
+// map the control to; see docs/CONTROLS.md for the reasoning.
+var frameworks = map[string][]string{
+	"C1":  {"NIST AC-2(3)", "SOX ITGC: access removal", "HIPAA 164.308(a)(3)(ii)(C)"},
+	"C2":  {"NIST AC-2", "NIST AC-6", "SOX ITGC: access modification"},
+	"C3":  {"NIST AC-2(1)", "SOX ITGC: access provisioning approval"},
+	"C4":  {"NIST AC-5", "SOX ITGC: segregation of duties"},
+	"C5":  {"NIST AC-5", "NIST AC-6"},
+	"C6":  {"NIST AC-6(5)", "NIST AC-6(1)", "CIS 5.4"},
+	"C7":  {"NIST CM-8", "NIST AC-2(1)"},
+	"C8":  {"NIST AC-2(2)", "NIST AC-6(5)"},
+	"C9":  {"NIST AC-2(4)", "NIST AU-6", "HIPAA 164.312(a)(2)(ii)"},
+	"C10": {"NIST AC-2(3)", "NIST IA-4", "SOX ITGC: access removal"},
+	"C11": {"NIST AC-2", "NIST AC-6", "SOX ITGC: unauthorized access"},
+	"C12": {"NIST AC-2(3)", "NIST AC-6(7)"},
+	"C13": {"NIST AC-2(j)", "SOX ITGC: user access review", "HIPAA 164.308(a)(4)(ii)(C)"},
+	"C14": {"NIST IA-5(1)", "NIST SC-12"},
 }
 
 func runChecks(s *State) []CheckResult {
@@ -36,7 +56,7 @@ func runChecks(s *State) []CheckResult {
 		if findings == nil {
 			findings = []string{}
 		}
-		out = append(out, CheckResult{id, control, why, module, len(findings) == 0, findings})
+		out = append(out, CheckResult{id, control, why, module, frameworks[id], len(findings) == 0, findings})
 	}
 
 	// C1 Leavers hold no access
@@ -61,7 +81,7 @@ func runChecks(s *State) []CheckResult {
 		if r != nil {
 			for _, e := range r.Entitlements {
 				want[e] = true
-				if !s.hasGrant(i.ID, e) {
+				if !s.hasGrant(i.ID, e) && !s.excluded(i.ID, e) {
 					f = append(f, fmt.Sprintf("%s is missing birthright %s", i.Name, ent(e)))
 				}
 			}
@@ -148,6 +168,69 @@ func runChecks(s *State) []CheckResult {
 		}
 	}
 	add("C7", "systems", "Every system is owned and automatically provisioned", "Manual apps are where deprovisioning gets missed.", f)
+
+	// C8 Expired JIT elevations are actually removed
+	f = nil
+	for _, g := range s.Grants {
+		if g.Source == "jit" && g.ExpiresAt != "" && !nowT().Before(parseT(g.ExpiresAt)) {
+			f = append(f, fmt.Sprintf("%s still holds %s after its JIT window ended", name(g.IdentityID), ent(g.EntitlementID)))
+		}
+	}
+	add("C8", "pam", "Expired JIT elevations are removed", "Time-boxed access only works if the clock is enforced.", f)
+
+	// C9 Break-glass use is reviewed
+	f = nil
+	for _, p := range s.PAMSessions {
+		if p.BreakGlass && p.ReviewedBy == "" && p.Status != "active" {
+			f = append(f, fmt.Sprintf("%s: %s used break-glass %s with no post-use review", p.ID, name(p.IdentityID), ent(p.EntitlementID)))
+		}
+	}
+	add("C9", "pam", "Every break-glass session is reviewed", "Emergency access bypasses approval, so it must be reviewed after the fact.", f)
+
+	// C10 No orphaned or unowned accounts in target systems
+	f = nil
+	for _, a := range s.TargetAccounts {
+		if c := s.classify(a); c.Finding == "orphan" || c.Finding == "unowned-service" {
+			f = append(f, fmt.Sprintf("%s / %s: %s", sysName(s, a.SystemID), a.AccountName, c.Detail))
+		}
+	}
+	add("C10", "risk", "No orphaned or ownerless accounts in target systems", "Reconciliation finds what deprovisioning missed.", f)
+
+	// C11 No rogue access created outside IAM
+	f = nil
+	for _, a := range s.TargetAccounts {
+		if c := s.classify(a); c.Finding == "rogue" {
+			f = append(f, fmt.Sprintf("%s / %s: %s", sysName(s, a.SystemID), a.AccountName, c.Detail))
+		}
+	}
+	add("C11", "risk", "No access granted directly in apps, outside IAM", "If IAM did not grant it, nobody approved it.", f)
+
+	// C12 Privileged access is used
+	f = nil
+	for _, d := range s.dormant() {
+		if d.Privileged {
+			f = append(f, fmt.Sprintf("%s has not used %s in %d days", name(d.IdentityID), ent(d.EntitlementID), d.DaysUnused))
+		}
+	}
+	add("C12", "risk", fmt.Sprintf("Standing privileged access is used within %d days", DormantDays), "Unused admin rights are pure risk: remove them or move them to JIT.", f)
+
+	// C13 Certification campaigns finish on time
+	f = nil
+	for _, c := range s.Campaigns {
+		if st := s.stats(c); st.Overdue {
+			f = append(f, fmt.Sprintf("%s is overdue with %d of %d items undecided", c.Name, st.Total-st.Decided, st.Total))
+		}
+	}
+	add("C13", "certifications", "Access reviews are completed by their due date", "An overdue review is a missed control for the whole quarter.", f)
+
+	// C14 SCIM credentials are rotated
+	f = nil
+	for _, t := range s.SCIMTokens {
+		if !t.Revoked && nowT().Sub(parseT(t.CreatedAt)).Hours() > 90*24 {
+			f = append(f, fmt.Sprintf("Token %s (%s…) is older than 90 days", t.Name, t.Prefix))
+		}
+	}
+	add("C14", "scim", "Provisioning tokens are rotated within 90 days", "A long-lived bearer token is a standing credential to create and delete users.", f)
 
 	return out
 }

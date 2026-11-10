@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 )
 
 var store *Store
@@ -25,6 +26,15 @@ func main() {
 		log.Fatalf("open store: %v", err)
 	}
 
+	mux := routes(staticDir)
+	go expirySweeper(15 * time.Second)
+
+	log.Printf("IAM Projects listening on :%s (data=%s)", port, dbPath)
+	log.Fatal(http.ListenAndServe(":"+port, logReq(mux)))
+}
+
+// routes wires every endpoint; tests use it to drive the real router.
+func routes(staticDir string) *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/health", func(w http.ResponseWriter, r *http.Request) { writeJSON(w, 200, map[string]string{"status": "ok"}) })
 	mux.HandleFunc("GET /api/summary", getSummary)
@@ -44,10 +54,36 @@ func main() {
 	mux.HandleFunc("GET /api/audit", getAudit)
 	mux.HandleFunc("POST /api/reset", postReset)
 	mux.HandleFunc("GET /api/lab/checks", getChecks)
-	mux.Handle("/", spa(staticDir))
+	mux.HandleFunc("POST /api/grants/revoke", postRevokeGrant)
 
-	log.Printf("IAM Projects listening on :%s (data=%s)", port, dbPath)
-	log.Fatal(http.ListenAndServe(":"+port, logReq(mux)))
+	// Access certifications (user access reviews)
+	mux.HandleFunc("GET /api/certifications", getCampaigns)
+	mux.HandleFunc("POST /api/certifications", postCampaign)
+	mux.HandleFunc("GET /api/certifications/{id}", getCampaign)
+	mux.HandleFunc("POST /api/certifications/{id}/items/{itemId}", postCertDecision)
+	mux.HandleFunc("POST /api/certifications/{id}/close", postCloseCampaign)
+
+	// Just-in-time privileged access
+	mux.HandleFunc("GET /api/pam", getPAM)
+	mux.HandleFunc("POST /api/pam/elevate", postElevate)
+	mux.HandleFunc("POST /api/pam/sessions/{id}/revoke", postEndSession)
+	mux.HandleFunc("POST /api/pam/sessions/{id}/review", postReviewSession)
+	mux.HandleFunc("POST /api/pam/eligibility", postEligibility)
+	mux.HandleFunc("DELETE /api/pam/eligibility", deleteEligibility)
+
+	// Risk & reconciliation
+	mux.HandleFunc("GET /api/risk", getRisk)
+	mux.HandleFunc("GET /api/reconciliation", getReconciliation)
+	mux.HandleFunc("POST /api/reconciliation/accounts/{id}", postAccountAction)
+
+	// SCIM 2.0 (RFC 7643 / 7644) for inbound provisioning from an IdP
+	mux.HandleFunc("GET /api/scim/tokens", getTokens)
+	mux.HandleFunc("POST /api/scim/tokens", postToken)
+	mux.HandleFunc("DELETE /api/scim/tokens/{id}", deleteToken)
+	registerSCIM(mux)
+
+	mux.Handle("/", spa(staticDir))
+	return mux
 }
 
 // ---------- plumbing ----------
@@ -122,7 +158,7 @@ func spa(dir string) http.Handler {
 
 func getSummary(w http.ResponseWriter, r *http.Request) {
 	store.View(func(s *State) {
-		active, pending, privileged := 0, 0, 0
+		active, pending, privileged, jit, reviews := 0, 0, 0, 0, 0
 		for _, i := range s.Identities {
 			if i.Status == "active" {
 				active++
@@ -138,9 +174,34 @@ func getSummary(w http.ResponseWriter, r *http.Request) {
 				privileged++
 			}
 		}
+		for _, p := range s.PAMSessions {
+			if p.Status == "active" {
+				jit++
+			}
+		}
+		for _, c := range s.CertItems {
+			if c.Decision == "pending" {
+				if camp := s.campaign(c.CampaignID); camp != nil && camp.Status == "active" {
+					reviews++
+				}
+			}
+		}
+		failing := 0
+		for _, c := range runChecks(s) {
+			if !c.Pass {
+				failing++
+			}
+		}
+		high := 0
+		for _, rk := range riskScores(s) {
+			if rk.Score >= 50 {
+				high++
+			}
+		}
 		writeJSON(w, 200, map[string]int{
 			"activeIdentities": active, "pendingRequests": pending, "roles": len(s.Roles),
 			"systems": len(s.Systems), "grants": len(s.Grants), "privilegedGrants": privileged,
+			"activeJIT": jit, "pendingReviews": reviews, "failingControls": failing, "highRisk": high,
 		})
 	})
 }
@@ -269,38 +330,11 @@ func postJoiner(w http.ResponseWriter, r *http.Request) {
 	}
 	var out Identity
 	err := store.Update(func(s *State) error {
-		role := s.role(in.RoleID)
-		if role == nil {
-			return httpErr{400, "unknown role"}
+		id, err := s.createIdentity(actor(r), newIdentity{in.Name, in.Email, in.Department, in.Title, in.Manager, in.RoleID, in.StartDate, ""})
+		if err != nil {
+			return err
 		}
-		email := in.Email
-		if email == "" {
-			email = strings.ToLower(strings.ReplaceAll(strings.TrimSpace(in.Name), " ", ".")) + "@demo.local"
-		}
-		for _, i := range s.Identities {
-			if strings.EqualFold(i.Email, email) && i.Status == "active" {
-				return httpErr{409, "an active identity already uses " + email}
-			}
-		}
-		dept := in.Department
-		if dept == "" {
-			dept = role.Department
-		}
-		start := in.StartDate
-		if start == "" {
-			start = now()[:10]
-		}
-		out = Identity{s.nextID("ID"), in.Name, email, dept, in.Title, in.Manager, role.ID, "active", start, ""}
-		s.Identities = append(s.Identities, out)
-		granted := []string{}
-		for _, e := range role.Entitlements {
-			if s.grant(out.ID, e, "role") {
-				granted = append(granted, e)
-			}
-		}
-		s.JMLEvents = append(s.JMLEvents, JMLEvent{s.nextID("JML"), "joiner", out.ID,
-			fmt.Sprintf("%s joined %s as %s", out.Name, dept, role.Name), granted, []string{}, now()})
-		s.audit(actor(r), "jml.joiner", out.ID, fmt.Sprintf("Created %s, role %s, granted %d birthright entitlements", out.Name, role.Name, len(granted)))
+		out = *id
 		return nil
 	})
 	if err != nil {
@@ -320,60 +354,14 @@ func postMover(w http.ResponseWriter, r *http.Request) {
 		fail(w, 400, "invalid JSON")
 		return
 	}
+	if in.NewRoleID == "" {
+		fail(w, 400, "newRoleId is required")
+		return
+	}
 	var ev JMLEvent
-	err := store.Update(func(s *State) error {
-		id := s.identity(in.IdentityID)
-		if id == nil || id.Status != "active" {
-			return httpErr{404, "active identity not found"}
-		}
-		newRole := s.role(in.NewRoleID)
-		if newRole == nil {
-			return httpErr{400, "unknown role"}
-		}
-		if newRole.ID == id.RoleID {
-			return httpErr{400, "identity already has that role"}
-		}
-		oldRole := s.role(id.RoleID)
-		keep := map[string]bool{}
-		for _, e := range newRole.Entitlements {
-			keep[e] = true
-		}
-		revoked, granted := []string{}, []string{}
-		if oldRole != nil {
-			for _, e := range oldRole.Entitlements {
-				if !keep[e] && s.revoke(id.ID, e, "role") {
-					revoked = append(revoked, e)
-				}
-			}
-		}
-		// Request-based access is also re-certified on a move: anything outside the new role is removed.
-		for _, g := range s.grantsFor(id.ID) {
-			if g.Source == "request" && !keep[g.EntitlementID] && s.revoke(id.ID, g.EntitlementID, "request") {
-				revoked = append(revoked, g.EntitlementID)
-			}
-		}
-		for _, e := range newRole.Entitlements {
-			if s.grant(id.ID, e, "role") {
-				granted = append(granted, e)
-			}
-		}
-		oldName := "none"
-		if oldRole != nil {
-			oldName = oldRole.Name
-		}
-		id.RoleID = newRole.ID
-		if in.NewDepartment != "" {
-			id.Department = in.NewDepartment
-		} else {
-			id.Department = newRole.Department
-		}
-		if in.NewTitle != "" {
-			id.Title = in.NewTitle
-		}
-		ev = JMLEvent{s.nextID("JML"), "mover", id.ID, fmt.Sprintf("%s moved from %s to %s", id.Name, oldName, newRole.Name), granted, revoked, now()}
-		s.JMLEvents = append(s.JMLEvents, ev)
-		s.audit(actor(r), "jml.mover", id.ID, fmt.Sprintf("%s → %s: +%d / -%d entitlements", oldName, newRole.Name, len(granted), len(revoked)))
-		return nil
+	err := store.Update(func(s *State) (err error) {
+		ev, err = s.moveIdentity(actor(r), in.IdentityID, in.NewRoleID, in.NewTitle, in.NewDepartment)
+		return err
 	})
 	if err != nil {
 		respondErr(w, err)
@@ -393,37 +381,42 @@ func postLeaver(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var ev JMLEvent
-	err := store.Update(func(s *State) error {
-		id := s.identity(in.IdentityID)
-		if id == nil || id.Status != "active" {
-			return httpErr{404, "active identity not found"}
-		}
-		revoked := []string{}
-		for _, g := range s.grantsFor(id.ID) {
-			s.revoke(id.ID, g.EntitlementID, "")
-			revoked = append(revoked, g.EntitlementID)
-		}
-		// Cancel any open requests for the leaver.
-		for i := range s.Requests {
-			if s.Requests[i].IdentityID == id.ID && s.Requests[i].Status == "pending" {
-				s.Requests[i].Status, s.Requests[i].DecidedBy, s.Requests[i].DecidedAt, s.Requests[i].Reason = "denied", "system", now(), "Auto-cancelled: identity terminated"
-			}
-		}
-		id.Status = "terminated"
-		id.EndDate = in.EndDate
-		if id.EndDate == "" {
-			id.EndDate = now()[:10]
-		}
-		ev = JMLEvent{s.nextID("JML"), "leaver", id.ID, fmt.Sprintf("%s left; account disabled and all access revoked", id.Name), []string{}, revoked, now()}
-		s.JMLEvents = append(s.JMLEvents, ev)
-		s.audit(actor(r), "jml.leaver", id.ID, fmt.Sprintf("Disabled %s, revoked %d entitlements", id.Name, len(revoked)))
-		return nil
+	err := store.Update(func(s *State) (err error) {
+		ev, err = s.terminateIdentity(actor(r), in.IdentityID, in.EndDate)
+		return err
 	})
 	if err != nil {
 		respondErr(w, err)
 		return
 	}
 	writeJSON(w, 200, ev)
+}
+
+// postRevokeGrant removes one grant outright (remediation of dormant or excess access).
+func postRevokeGrant(w http.ResponseWriter, r *http.Request) {
+	var in struct{ IdentityID, EntitlementID, Reason string }
+	if err := decode(r, &in); err != nil || strings.TrimSpace(in.Reason) == "" {
+		fail(w, 400, "identityId, entitlementId and a reason are required")
+		return
+	}
+	err := store.Update(func(s *State) error {
+		g := s.findGrant(in.IdentityID, in.EntitlementID)
+		if g == nil {
+			return httpErr{404, "grant not found"}
+		}
+		src := g.Source
+		s.revoke(in.IdentityID, in.EntitlementID, "")
+		if src == "role" {
+			s.Exclusions = append(s.Exclusions, Exclusion{in.IdentityID, in.EntitlementID, "", in.Reason, now()})
+		}
+		s.audit(actor(r), "grant.revoked", in.IdentityID, fmt.Sprintf("%s revoked (%s): %s", in.EntitlementID, src, in.Reason))
+		return nil
+	})
+	if err != nil {
+		respondErr(w, err)
+		return
+	}
+	writeJSON(w, 200, map[string]string{"status": "revoked"})
 }
 
 // ---------- Access requests ----------

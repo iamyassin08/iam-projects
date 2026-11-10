@@ -13,6 +13,7 @@ import (
 
 type Identity struct {
 	ID         string `json:"id"`
+	ExternalID string `json:"externalId,omitempty"` // set by an upstream IdP over SCIM
 	Name       string `json:"name"`
 	Email      string `json:"email"`
 	Department string `json:"department"`
@@ -22,6 +23,8 @@ type Identity struct {
 	Status     string `json:"status"` // active | terminated
 	StartDate  string `json:"startDate"`
 	EndDate    string `json:"endDate,omitempty"`
+	Created    string `json:"created,omitempty"`
+	Updated    string `json:"updated,omitempty"`
 }
 
 type Role struct {
@@ -52,8 +55,10 @@ type Entitlement struct {
 type Grant struct {
 	IdentityID    string `json:"identityId"`
 	EntitlementID string `json:"entitlementId"`
-	Source        string `json:"source"` // role | request
+	Source        string `json:"source"` // role | request | jit
 	GrantedAt     string `json:"grantedAt"`
+	ExpiresAt     string `json:"expiresAt,omitempty"` // only for jit
+	LastUsed      string `json:"lastUsed,omitempty"`  // last sign-in that exercised this entitlement
 }
 
 type AccessRequest struct {
@@ -78,7 +83,7 @@ type SoDRule struct {
 
 type JMLEvent struct {
 	ID         string   `json:"id"`
-	Type       string   `json:"type"` // joiner | mover | leaver
+	Type       string   `json:"type"` // joiner | mover | leaver | rehire
 	IdentityID string   `json:"identityId"`
 	Summary    string   `json:"summary"`
 	Granted    []string `json:"granted"`
@@ -95,17 +100,34 @@ type AuditEntry struct {
 	Detail string `json:"detail"`
 }
 
+// Exclusion records a birthright entitlement that a reviewer revoked in a
+// certification. Role re-syncs honour it until the identity changes role.
+type Exclusion struct {
+	IdentityID    string `json:"identityId"`
+	EntitlementID string `json:"entitlementId"`
+	CampaignID    string `json:"campaignId"`
+	Reason        string `json:"reason"`
+	At            string `json:"at"`
+}
+
 type State struct {
-	Seq          int             `json:"seq"`
-	Identities   []Identity      `json:"identities"`
-	Roles        []Role          `json:"roles"`
-	Systems      []System        `json:"systems"`
-	Entitlements []Entitlement   `json:"entitlements"`
-	Grants       []Grant         `json:"grants"`
-	Requests     []AccessRequest `json:"requests"`
-	SoDRules     []SoDRule       `json:"sodRules"`
-	JMLEvents    []JMLEvent      `json:"jmlEvents"`
-	Audit        []AuditEntry    `json:"audit"`
+	Seq            int             `json:"seq"`
+	Identities     []Identity      `json:"identities"`
+	Roles          []Role          `json:"roles"`
+	Systems        []System        `json:"systems"`
+	Entitlements   []Entitlement   `json:"entitlements"`
+	Grants         []Grant         `json:"grants"`
+	Requests       []AccessRequest `json:"requests"`
+	SoDRules       []SoDRule       `json:"sodRules"`
+	JMLEvents      []JMLEvent      `json:"jmlEvents"`
+	Audit          []AuditEntry    `json:"audit"`
+	Exclusions     []Exclusion     `json:"exclusions"`
+	Campaigns      []Campaign      `json:"campaigns"`
+	CertItems      []CertItem      `json:"certItems"`
+	Eligibility    []Eligibility   `json:"eligibility"`
+	PAMSessions    []PAMSession    `json:"pamSessions"`
+	SCIMTokens     []SCIMToken     `json:"scimTokens"`
+	TargetAccounts []TargetAccount `json:"targetAccounts"`
 }
 
 // ---------- Store: JSON file persisted on a Docker volume ----------
@@ -175,7 +197,18 @@ func (st *Store) Reset() error {
 
 // ---------- helpers on State ----------
 
-func now() string { return time.Now().UTC().Format(time.RFC3339) }
+// clock is swappable so tests can move time forward (JIT expiry, overdue reviews).
+var clock = time.Now
+
+func nowT() time.Time { return clock().UTC() }
+func now() string     { return nowT().Format(time.RFC3339) }
+
+func parseT(s string) time.Time {
+	t, _ := time.Parse(time.RFC3339, s)
+	return t
+}
+
+func daysAgo(d int) string { return nowT().AddDate(0, 0, -d).Format(time.RFC3339) }
 
 func (s *State) nextID(prefix string) string {
 	s.Seq++
@@ -212,6 +245,15 @@ func (s *State) role(id string) *Role {
 	return nil
 }
 
+func (s *State) system(id string) *System {
+	for i := range s.Systems {
+		if s.Systems[i].ID == id {
+			return &s.Systems[i]
+		}
+	}
+	return nil
+}
+
 func (s *State) entitlement(id string) *Entitlement {
 	for i := range s.Entitlements {
 		if s.Entitlements[i].ID == id {
@@ -221,20 +263,25 @@ func (s *State) entitlement(id string) *Entitlement {
 	return nil
 }
 
-func (s *State) hasGrant(identityID, entID string) bool {
-	for _, g := range s.Grants {
-		if g.IdentityID == identityID && g.EntitlementID == entID {
-			return true
+func (s *State) findGrant(identityID, entID string) *Grant {
+	for i := range s.Grants {
+		if s.Grants[i].IdentityID == identityID && s.Grants[i].EntitlementID == entID {
+			return &s.Grants[i]
 		}
 	}
-	return false
+	return nil
 }
+
+func (s *State) hasGrant(identityID, entID string) bool { return s.findGrant(identityID, entID) != nil }
 
 func (s *State) grant(identityID, entID, source string) bool {
 	if s.hasGrant(identityID, entID) {
 		return false
 	}
-	s.Grants = append(s.Grants, Grant{identityID, entID, source, now()})
+	if source == "role" && s.excluded(identityID, entID) {
+		return false
+	}
+	s.Grants = append(s.Grants, Grant{IdentityID: identityID, EntitlementID: entID, Source: source, GrantedAt: now()})
 	return true
 }
 
@@ -259,6 +306,25 @@ func (s *State) grantsFor(identityID string) []Grant {
 	return out
 }
 
+func (s *State) excluded(identityID, entID string) bool {
+	for _, x := range s.Exclusions {
+		if x.IdentityID == identityID && x.EntitlementID == entID {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *State) clearExclusions(identityID string) {
+	out := s.Exclusions[:0]
+	for _, x := range s.Exclusions {
+		if x.IdentityID != identityID {
+			out = append(out, x)
+		}
+	}
+	s.Exclusions = out
+}
+
 func (s *State) audit(actor, action, target, detail string) {
 	s.Audit = append([]AuditEntry{{s.nextID("AUD"), now(), actor, action, target, detail}}, s.Audit...)
 	if len(s.Audit) > 1000 {
@@ -281,3 +347,6 @@ func (s *State) sodConflict(identityID, entID string) *SoDRule {
 	}
 	return nil
 }
+
+func fmtT(t time.Time) string    { return t.UTC().Format(time.RFC3339) }
+func durMin(m int) time.Duration { return time.Duration(m) * time.Minute }
