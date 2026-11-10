@@ -33,7 +33,7 @@ day of a move, and on the last day. Late or missed changes become orphaned accou
 
 **Test**
 1. Onboard a joiner. Their grants should equal the role exactly.
-2. Move Amina Hassan from *Software Engineer* to *Revenue Cycle Analyst*. `aws-dev` and `gh-member` must be revoked.
+2. Move Omar Farouk from *Software Engineer* to *Revenue Cycle Analyst*. `aws-dev` and `gh-member` must be revoked.
 3. Terminate Yusuf Ali (who holds an extra `aws-admin` grant). Run **C1** and **C2**.
 
 **Improve**
