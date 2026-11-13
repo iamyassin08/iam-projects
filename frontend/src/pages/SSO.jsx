@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Fingerprint, LogIn, LogOut, Play, CheckCircle2, Server, Globe, ExternalLink, KeyRound, Boxes } from 'lucide-react'
 import { api } from '../api.js'
+import { refreshMe } from '../me.js'
 import { useLoad, PageHeader, Card, Badge, Button, ErrorBox, Loading, Seg, toast, Avatar, Tooltip, usePreline } from '../ui.jsx'
 import { JWTView, ClaimsTable, Sequence, CodeBlock } from '../components.jsx'
 import realm from '../../../backend/keycloak/realm-assafwah.json?raw'
@@ -65,7 +66,7 @@ export default function SSO() {
     return () => clearTimeout(t)
   }, [playing, step])
 
-  async function logout() { await api.logout(); await reload(); toast('Signed out') }
+  async function logout() { await api.logout(); await reload(); await refreshMe(); toast('Signed out') }
 
   if (!data) return <><ErrorBox error={error} /><Loading /></>
   const { me, disc, jwks } = data
