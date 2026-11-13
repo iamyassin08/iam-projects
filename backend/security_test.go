@@ -313,3 +313,33 @@ func TestDemoPasswordSync(t *testing.T) {
 		return nil
 	})
 }
+
+func TestProfileSelfService(t *testing.T) {
+	c := newClient(t)
+	if rec := c.raw("GET", "/api/profile", ""); rec.Code != 401 {
+		t.Fatalf("profile needs a session, got %d", rec.Code)
+	}
+	sc, _ := signIn(t, c, "yusuf.ali", "nashville")
+	rec := c.raw("PUT", "/api/profile", `{"displayName":"Yusuf A.","title":"IAM Engineer","bio":"hi","website":"https://example.com","prefs":{"landing":"lab","reduceMotion":true}}`, sc)
+	if rec.Code != 200 || !strings.Contains(rec.Body.String(), `"landing":"lab"`) {
+		t.Fatalf("update: %d %s", rec.Code, rec.Body.String())
+	}
+	if rec := c.raw("PUT", "/api/profile", `{"avatar":"data:text/html;base64,PHNjcmlwdD4="}`, sc); rec.Code != 400 {
+		t.Fatalf("non-image avatar must be rejected, got %d", rec.Code)
+	}
+	if rec := c.raw("PUT", "/api/profile", `{"website":"javascript:alert(1)"}`, sc); rec.Code != 400 {
+		t.Fatalf("non-https website must be rejected, got %d", rec.Code)
+	}
+	rec = c.raw("GET", "/api/profile", "", sc)
+	if !strings.Contains(rec.Body.String(), `"access"`) || !strings.Contains(rec.Body.String(), "ServiceNow") {
+		t.Fatalf("profile should list the user's access: %s", rec.Body.String()[:200])
+	}
+	if !strings.Contains(c.raw("GET", "/api/me", "", sc).Body.String(), "Yusuf A.") {
+		t.Fatal("/api/me should carry the profile")
+	}
+	c.raw("POST", "/api/profile/signout-everywhere", "", sc)
+	time.Sleep(1100 * time.Millisecond)
+	if rec := c.raw("GET", "/api/profile", "", sc); rec.Code != 401 {
+		t.Fatalf("sign out everywhere should kill the session, got %d", rec.Code)
+	}
+}

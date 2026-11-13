@@ -139,6 +139,7 @@ type State struct {
 	CloudPrincipals  []CloudPrincipal  `json:"cloudPrincipals"`
 	CloudPolicies    []CloudPolicy     `json:"cloudPolicies"`
 	AzureAssignments []AzureAssignment `json:"azureAssignments"`
+	Profiles         []Profile         `json:"profiles"`
 }
 
 // ---------- Store: JSON file persisted on a Docker volume ----------

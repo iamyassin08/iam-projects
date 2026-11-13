@@ -97,6 +97,7 @@ func routes(staticDir string) *http.ServeMux {
 	registerVault(mux)
 	registerCloud(mux)
 	registerFeed(mux)
+	registerProfile(mux)
 
 	mux.Handle("/", spa(staticDir))
 	return mux

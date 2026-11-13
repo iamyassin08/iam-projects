@@ -331,5 +331,12 @@ func getMe(w http.ResponseWriter, r *http.Request) {
 	tokenStore.Lock()
 	tk := tokenStore.m[s.SID]
 	tokenStore.Unlock()
-	writeJSON(w, 200, map[string]any{"authenticated": true, "user": s, "tokens": tk, "providers": providers})
+	var prof *Profile
+	store.View(func(st *State) {
+		if p := st.profile(s.Username); p != nil {
+			c := *p
+			prof = &c
+		}
+	})
+	writeJSON(w, 200, map[string]any{"authenticated": true, "user": s, "tokens": tk, "providers": providers, "profile": prof})
 }
