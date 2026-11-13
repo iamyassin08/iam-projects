@@ -184,6 +184,9 @@ func ssoLogin(w http.ResponseWriter, r *http.Request) {
 		"scope": {"openid profile email"}, "state": {ls.State}, "nonce": {ls.Nonce},
 		"code_challenge": {pkceChallenge(ls.Verifier)}, "code_challenge_method": {"S256"},
 	}
+	if h := strings.TrimSpace(r.URL.Query().Get("login_hint")); h != "" && len(h) <= 64 {
+		q.Set("login_hint", h) // OIDC: pre-fills the username at the IdP
+	}
 	if r.URL.Query().Get("prompt") != "" {
 		q.Set("prompt", r.URL.Query().Get("prompt"))
 	}
@@ -321,7 +324,7 @@ func ssoLogout(w http.ResponseWriter, r *http.Request) {
 func getMe(w http.ResponseWriter, r *http.Request) {
 	providers := []map[string]any{
 		{"id": "builtin", "name": "Assafwah IdP (built-in)", "configured": true, "issuer": issuerFor(r)},
-		{"id": "keycloak", "name": "Keycloak", "configured": keycloakConfigured(), "issuer": os.Getenv("OIDC_ISSUER")},
+		{"id": "keycloak", "name": "Keycloak", "configured": keycloakConfigured(), "issuer": os.Getenv("OIDC_ISSUER"), "logo": keycloakLogo()},
 	}
 	s := currentSession(r)
 	if s == nil {
@@ -339,4 +342,16 @@ func getMe(w http.ResponseWriter, r *http.Request) {
 		}
 	})
 	writeJSON(w, 200, map[string]any{"authenticated": true, "user": s, "tokens": tk, "providers": providers, "profile": prof})
+}
+
+// keycloakLogo is the logo served by the configured Keycloak itself
+// (KEYCLOAK_LOGO_URL overrides it; the path changes between Keycloak versions).
+func keycloakLogo() string {
+	if v := os.Getenv("KEYCLOAK_LOGO_URL"); v != "" {
+		return v
+	}
+	if o := strings.TrimSpace(idpImgOrigin()); o != "" {
+		return o + "/resources/3wwhu/admin/keycloak.v2/favicon.svg"
+	}
+	return ""
 }

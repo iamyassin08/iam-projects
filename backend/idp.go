@@ -157,7 +157,7 @@ func (c *oidcClient) allowsRedirect(r *http.Request, uri string) bool {
 
 type authTxn struct {
 	ID, ClientID, RedirectURI, State, Nonce, Challenge, Scope, Issuer string
-	Username                                                          string
+	Username, LoginHint                                               string
 	Ctx                                                               signInCtx
 	PasswordOK, MFADone                                               bool
 	Policies                                                          []string
@@ -254,7 +254,8 @@ func idpAuthorize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	t := &authTxn{ID: randToken(16), ClientID: c.ID, RedirectURI: redirect, State: q.Get("state"), Nonce: q.Get("nonce"),
-		Challenge: q.Get("code_challenge"), Scope: q.Get("scope"), Issuer: issuerFor(r), Expires: nowT().Add(10 * time.Minute)}
+		Challenge: q.Get("code_challenge"), Scope: q.Get("scope"), Issuer: issuerFor(r), Expires: nowT().Add(10 * time.Minute),
+		LoginHint: clip(q.Get("login_hint"), 64)}
 	idpMem.Lock()
 	for k, v := range idpMem.txns {
 		if nowT().After(v.Expires) {
@@ -289,7 +290,7 @@ func idpTxnInfo(w http.ResponseWriter, r *http.Request) {
 			users = append(users, map[string]any{"username": u.Username, "name": u.Name, "groups": u.Groups, "mfaEnrolled": u.MFAEnrolled, "breakGlass": u.BreakGlass})
 		}
 		writeJSON(w, 200, map[string]any{"client": c.Name, "clientId": c.ID, "scope": t.Scope, "redirectUri": t.RedirectURI,
-			"demoPassword": DemoPassword, "users": users, "locations": Locations})
+			"demoPassword": DemoPassword, "users": users, "locations": Locations, "loginHint": t.LoginHint})
 	})
 }
 

@@ -4,6 +4,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -17,11 +18,13 @@ import (
 
 // ---------- security headers ----------
 
-const csp = "default-src 'self'; " +
+// The Keycloak origin (if configured) is allowed for images so the sign-in
+// page can show the logo served by that Keycloak instance.
+var csp = "default-src 'self'; " +
 	"script-src 'self'; " +
 	"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
 	"font-src 'self' https://fonts.gstatic.com; " +
-	"img-src 'self' data: blob:; " +
+	"img-src 'self' data: blob:" + idpImgOrigin() + "; " +
 	"connect-src 'self'; " +
 	"frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
 
@@ -213,4 +216,12 @@ func newServer(port string, h http.Handler) *http.Server {
 		IdleTimeout:       120 * time.Second,
 		MaxHeaderBytes:    1 << 16,
 	}
+}
+
+func idpImgOrigin() string {
+	u, err := url.Parse(os.Getenv("OIDC_ISSUER"))
+	if err != nil || u.Scheme != "https" || u.Host == "" {
+		return ""
+	}
+	return " https://" + u.Host
 }
