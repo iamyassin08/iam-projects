@@ -283,3 +283,19 @@ func toJSON(v any) string {
 	b, _ := json.Marshal(v)
 	return string(b)
 }
+
+func TestAccessCheck(t *testing.T) {
+	c := newClient(t)
+	_, out := c.do("GET", "/api/access-check?identityId=ID-3&entitlementId=erp-ap", nil)
+	if out["allowed"] != true || out["via"] != "role" {
+		t.Fatalf("Priya should hold AP via role: %v", out)
+	}
+	_, out = c.do("GET", "/api/access-check?identityId=ID-3&entitlementId=erp-approve", nil)
+	if out["allowed"] != false || !strings.Contains(toJSON(out), "sod-2") {
+		t.Fatalf("Priya approving payments should be denied and flag sod-2: %v", out)
+	}
+	_, out = c.do("GET", "/api/access-check?identityId=ID-7&entitlementId=sn-admin", nil)
+	if out["allowed"] != false || !strings.Contains(toJSON(out), "eligible") {
+		t.Fatalf("Yusuf should be JIT-eligible, not standing: %v", out)
+	}
+}
