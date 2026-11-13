@@ -264,6 +264,13 @@ func idpAuthorize(w http.ResponseWriter, r *http.Request) {
 	}
 	idpMem.txns[t.ID] = t
 	idpMem.Unlock()
+	// Embedded sign-in: the app's own sign-in page starts the flow with
+	// fetch(Accept: application/json) and drives the password/MFA steps in
+	// place, instead of navigating to the hosted page.
+	if strings.Contains(r.Header.Get("Accept"), "application/json") {
+		writeJSON(w, 200, map[string]any{"txn": t.ID, "loginHint": t.LoginHint})
+		return
+	}
 	http.Redirect(w, r, "/#signin?txn="+t.ID, http.StatusFound)
 }
 
@@ -555,7 +562,7 @@ func getIdPUsers(w http.ResponseWriter, r *http.Request) {
 			}
 			out = append(out, row)
 		}
-		writeJSON(w, 200, map[string]any{"users": out, "demoPassword": DemoPassword})
+		writeJSON(w, 200, map[string]any{"users": out, "demoPassword": DemoPassword, "locations": Locations})
 	})
 }
 

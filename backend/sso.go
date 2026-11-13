@@ -177,7 +177,11 @@ func ssoLogin(w http.ResponseWriter, r *http.Request) {
 	} else {
 		p = builtin(r)
 	}
-	ls := loginState{State: randToken(16), Nonce: randToken(16), Verifier: randToken(32), IdP: p.ID, Redirect: "/#sso", Exp: nowT().Add(10 * time.Minute).Unix()}
+	back := "/#sso"
+	if ret := r.URL.Query().Get("return"); ret == "login" || ret == "profile" || ret == "security" {
+		back = "/#" + ret // fixed allowlist: never an open redirect
+	}
+	ls := loginState{State: randToken(16), Nonce: randToken(16), Verifier: randToken(32), IdP: p.ID, Redirect: back, Exp: nowT().Add(10 * time.Minute).Unix()}
 	http.SetCookie(w, &http.Cookie{Name: "iam_login", Value: sealCookie(ls), Path: "/auth", HttpOnly: true, Secure: secureCookie(r), SameSite: http.SameSiteLaxMode, MaxAge: 600})
 	q := url.Values{
 		"response_type": {"code"}, "client_id": {p.ClientID}, "redirect_uri": {redirectURI(r)},
