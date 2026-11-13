@@ -14,5 +14,5 @@ const prelineSideEffects = {
 
 export default defineConfig({
   plugins: [react(), tailwindcss(), prelineSideEffects],
-  server: { proxy: { '/api': 'http://localhost:8080', '/scim': 'http://localhost:8080' } },
+  server: { fs: { allow: ['..'] }, proxy: { '/api': 'http://localhost:8080', '/scim': 'http://localhost:8080', '/idp': 'http://localhost:8080', '/auth': 'http://localhost:8080' } },
 })
