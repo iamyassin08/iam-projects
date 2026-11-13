@@ -1,0 +1,10 @@
+employee_id,name,email,department,title,manager,role_id,status
+WD-10040,Omar Farouk,omar.farouk@demo.local,Engineering,Engineering Manager,Leila Nasser,r-eng,active
+WD-10057,Daniel Brooks,daniel.brooks@demo.local,Engineering,Solutions Engineer,Leila Nasser,r-eng,active
+WD-10074,Priya Raman,priya.raman@demo.local,Finance,AP Specialist,Grace Kim,r-ap,active
+WD-10091,Grace Kim,grace.kim@demo.local,Finance,Finance Manager,Leila Nasser,r-finmgr,active
+WD-10108,Marcus Lee,marcus.lee@demo.local,Revenue Cycle,Revenue Cycle Analyst,Grace Kim,r-rcm,terminated
+WD-10125,Sofia Alvarez,sofia.alvarez@demo.local,IT,Senior Service Desk Analyst,Yusuf Ali,r-desk,active
+WD-10142,Yusuf Ali,yusuf.ali@demo.local,Security,IAM Engineer,Leila Nasser,r-iam,active
+WD-10300,Amina Yusuf,amina.yusuf@demo.local,Finance,AP Specialist,Grace Kim,r-ap,active
+WD-10301,Tom Becker,tom.becker@demo.local,Sales,Account Executive,Leila Nasser,r-sales,terminated
