@@ -28,7 +28,7 @@ services:
       - KC_BOOTSTRAP_ADMIN_USERNAME=admin
       - KC_BOOTSTRAP_ADMIN_PASSWORD=${KC_BOOTSTRAP_ADMIN_PASSWORD:-change-me-now}
     volumes:
-      - ./keycloak/realm-assafwah.json:/opt/keycloak/data/import/realm-assafwah.json:ro
+      - ./backend/keycloak/realm-assafwah.json:/opt/keycloak/data/import/realm-assafwah.json:ro
 
 volumes:
   iam-data:

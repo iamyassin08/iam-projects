@@ -22,8 +22,8 @@ A working Identity & Access Management platform that does the real jobs of an IA
 | 6 | Access reviews & audit readiness | [Access reviews](https://iam.assafwahinc.com/#certifications), [Controls lab](https://iam.assafwahinc.com/#lab) | UAR campaigns, reconciliation, evidence |
 | 7 | Cloud IAM policy design | [Cloud IAM](https://iam.assafwahinc.com/#cloud) | AWS policies, permissions boundaries, simulator, Azure RBAC + PIM |
 | 8 | Identity monitoring & anomaly detection | [Identity threat detection](https://iam.assafwahinc.com/#monitoring) | Spray, brute force, impossible travel, MFA fatigue, KQL, ATT&CK |
-| 9 | Open-source IAM (Keycloak) | [Single sign-on → Keycloak](https://iam.assafwahinc.com/#sso), [`keycloak/`](keycloak/) | Realm as code, OIDC clients, roles, MFA, lockout |
-| 10 | IAM automation with scripting | [Automation](https://iam.assafwahinc.com/#automation), [`scripts/`](scripts/) | Python, PowerShell, SCIM/REST, reporting |
+| 9 | Open-source IAM (Keycloak) | [Single sign-on → Keycloak](https://iam.assafwahinc.com/#sso), [`backend/keycloak/`](backend/keycloak/) | Realm as code, OIDC clients, roles, MFA, lockout |
+| 10 | IAM automation with scripting | [Automation](https://iam.assafwahinc.com/#automation), [`backend/scripts/`](backend/scripts/) | Python, PowerShell, SCIM/REST, reporting |
 
 | Single sign-on (signed in, token inspector) | MFA & Conditional Access (What If) |
 |---|---|
@@ -49,8 +49,8 @@ A working Identity & Access Management platform that does the real jobs of an IA
 | **Credential vault** | PAM: vaulting and rotation | AES-256-GCM with the key outside the state file; checkout requires the entitlement right now, a reason and step-up TOTP; exclusive 30-minute checkout; rotation at check-in or expiry. |
 | **Cloud IAM** | AWS + Azure least privilege | Policy engine (explicit deny, allow, permissions boundary, wildcards, MFA / IP / region conditions), linter, simulator with a statement-by-statement trace; Azure scope hierarchy with permanent vs PIM-eligible assignments. |
 | **Identity threat detection** | Sign-in analytics | A week of sign-ins hiding six attacks plus live sign-ins; seven rules mapped to MITRE ATT&CK with KQL; triage that blocks IPs in Conditional Access, revokes sessions, resets MFA. |
-| **Automation** | Scripting | HR-feed reconciliation (dry run → apply) in the browser and in [`scripts/iamctl.py`](scripts/iamctl.py) over SCIM; [`IamCtl.ps1`](scripts/IamCtl.ps1) for reports and offboarding. |
-| **Controls lab** | Continuous control monitoring | 20 controls in [`server/lab.go`](server/lab.go) run after every change, with framework mapping and a downloadable audit write-up. |
+| **Automation** | Scripting | HR-feed reconciliation (dry run → apply) in the browser and in [`backend/scripts/iamctl.py`](backend/scripts/iamctl.py) over SCIM; [`IamCtl.ps1`](backend/scripts/IamCtl.ps1) for reports and offboarding. |
+| **Controls lab** | Continuous control monitoring | 20 controls in [`backend/lab.go`](backend/lab.go) run after every change, with framework mapping and a downloadable audit write-up. |
 | **Audit log** | Evidence | Every action with actor, target and reason; SCIM changes attributed to the token (`scim:<name>`); CSV export. |
 
 The tenant ships with **twelve deliberate audit findings**: privileged birthright, a manual app, an unreviewed break-glass session, an orphan and an ownerless service account, rogue access that breaks SoD, a dormant Domain Admin, MFA left in report-only, legacy auth allowed, an unrotated root credential, a `*:*` cloud policy, cloud admin without MFA, and untriaged identity alerts. The lab walks you through fixing each one: **Problem → Assumptions → Build → Test → Improve**.
@@ -110,7 +110,7 @@ flowchart LR
 ```
 
 - **One lifecycle code path.** The JML screen and SCIM call the same functions, so an IdP push is governed exactly like an analyst action.
-- **Controls as code.** Each control is a pure function over state, unit-tested in [`server/features_test.go`](server/features_test.go) and [`server/lifecycle_test.go`](server/lifecycle_test.go), including time travel through a swappable clock for JIT expiry and overdue reviews.
+- **Controls as code.** Each control is a pure function over state, unit-tested in [`backend/features_test.go`](backend/features_test.go) and [`backend/lifecycle_test.go`](backend/lifecycle_test.go), including time travel through a swappable clock for JIT expiry and overdue reviews.
 - **Storage.** A single JSON document behind a `Store` type (write to tmp, then rename, under a mutex). Swappable for Postgres without touching handlers.
 - **Deploy.** A multi-stage Dockerfile builds a small Alpine image serving the API and SPA on port 8080, deployed on Coolify behind a Cloudflare tunnel.
 
@@ -139,15 +139,15 @@ More in [`docs/SCIM.md`](docs/SCIM.md). Reset the demo any time from the home sc
 docker compose up --build                 # → http://localhost:8080
 
 # or, for development
-cd server && go test ./... && go run .    # API on :8080
-cd web && npm install && npm run dev      # UI on :5173, proxies /api, /scim, /idp and /auth
+cd backend && go test ./... && go run .    # API on :8080
+cd frontend && npm install && npm run dev      # UI on :5173, proxies /api, /scim, /idp and /auth
 ```
 
 | Variable | Default | Purpose |
 |---|---|---|
 | `PORT` | `8080` | HTTP port |
 | `DATA_PATH` | `./data/iam.json` (`/data/iam.json` in Docker) | Persisted state |
-| `STATIC_DIR` | `../web/dist` (`/app/web` in Docker) | Built SPA |
+| `STATIC_DIR` | `../frontend/dist` (`/app/web` in Docker) | Built SPA |
 | `PUBLIC_URL` | derived from request | Fixes OIDC issuer and redirect URI, e.g. `https://iam.assafwahinc.com` |
 | `SESSION_SECRET` | random per boot | HMAC key for session cookies (set it so sign-ins survive redeploys) |
 | `VAULT_KEY` | `vault.key` beside the data file | Base64 32-byte AES key for the credential vault |
@@ -207,12 +207,13 @@ volume, and every person, company and IP address in the seed data is fictional (
 ## Repository
 
 ```
-server/    Go API: main.go (routes) · lifecycle.go · scim.go · certify.go · pam.go · risk.go · lab.go · seed.go · store.go
-           idp.go · sso.go · jose.go · conditional.go · signins.go · vault.go · cloudiam.go · hrfeed.go · seed_security.go · *_test.go
-web/       React SPA: src/App.jsx (shell + nav) · src/ui.jsx · src/components.jsx · src/guide.js · src/pages/*.jsx (one per module)
-scripts/   iamctl.py (Python, stdlib only) · IamCtl.ps1 · hr_feed_sample.csv
-keycloak/  realm-assafwah.json (realm as code: client, roles, MFA, lockout)
-docs/      LAB-FRAMEWORK.md · CONTROLS.md · SCIM.md · IAM-CONCEPTS.md · DEPLOY-COOLIFY.md · IDENTITY-SECURITY.md · KEYCLOAK.md
+backend/              Go API (stdlib only): main.go (routes) · lifecycle.go · scim.go · certify.go · pam.go · risk.go · lab.go
+                      idp.go · sso.go · jose.go · conditional.go · signins.go · vault.go · cloudiam.go · hrfeed.go · hardening.go · *_test.go
+  backend/scripts/    iamctl.py (Python, stdlib only) · IamCtl.ps1 · hr_feed_sample.csv
+  backend/keycloak/   realm-assafwah.json (realm as code) · saml-lab-client.json
+frontend/             React SPA: src/App.jsx (shell + nav) · src/ui.jsx · src/components.jsx · src/guide.js · src/help.js · src/pages/*.jsx
+docs/                 LAB-FRAMEWORK.md · CONTROLS.md · SCIM.md · IAM-CONCEPTS.md · DEPLOY-COOLIFY.md · IDENTITY-SECURITY.md · KEYCLOAK.md
+.github/workflows/    deploy.yml: test, build, then trigger the Coolify deploy on every push to main
 ```
 
 ## Ideas to extend
