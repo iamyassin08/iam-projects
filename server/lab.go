@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"slices"
+	"strings"
 )
 
 // Control checks are read-only assertions over the current state — the
@@ -36,6 +38,12 @@ var frameworks = map[string][]string{
 	"C12": {"NIST AC-2(3)", "NIST AC-6(7)"},
 	"C13": {"NIST AC-2(j)", "SOX ITGC: user access review", "HIPAA 164.308(a)(4)(ii)(C)"},
 	"C14": {"NIST IA-5(1)", "NIST SC-12"},
+	"C15": {"NIST IA-2(1)", "NIST IA-2(2)", "HIPAA 164.312(d)", "CIS 6.3", "CIS 6.5"},
+	"C16": {"NIST IA-2", "NIST AC-17", "CIS 4.8"},
+	"C17": {"NIST IA-5(1)", "NIST AC-2(4)", "CIS 5.2", "SOX ITGC: privileged access"},
+	"C18": {"NIST AC-6", "NIST AC-6(10)", "CIS 6.8"},
+	"C19": {"NIST AC-6(5)", "NIST IA-2(1)", "CIS 6.5"},
+	"C20": {"NIST IR-4", "NIST SI-4", "NIST AU-6", "HIPAA 164.308(a)(6)(ii)"},
 }
 
 func runChecks(s *State) []CheckResult {
@@ -231,6 +239,88 @@ func runChecks(s *State) []CheckResult {
 		}
 	}
 	add("C14", "scim", "Provisioning tokens are rotated within 90 days", "A long-lived bearer token is a standing credential to create and delete users.", f)
+
+	// C15 MFA is enforced for every user (not just admins, not report-only)
+	f = nil
+	enforced := false
+	for _, p := range s.CAPolicies {
+		if p.State == "on" && p.Grant == "mfa" && inAny(p.IncludeGroups, []string{"all-staff"}) && len(p.RiskLevels) == 0 && len(p.Devices) == 0 && len(p.Countries) == 0 && len(p.NotCountries) == 0 {
+			enforced = true
+		}
+		if p.State == "report-only" && p.Grant == "mfa" {
+			f = append(f, p.ID+" "+p.Name+" is in report-only: it logs but does not enforce")
+		}
+	}
+	if !enforced && len(f) == 0 {
+		f = append(f, "No enabled Conditional Access policy requires MFA for all users")
+	}
+	if enforced {
+		f = nil
+	}
+	for _, u := range s.IdPUsers {
+		if !u.MFAEnrolled && !u.Disabled {
+			f = append(f, u.Name+" has no MFA method registered")
+		}
+	}
+	add("C15", "mfa", "MFA is enforced and registered for every user", "Passwords alone are phished and sprayed daily; MFA blocks over 99% of those attacks.", f)
+
+	// C16 Legacy authentication is blocked
+	f = nil
+	blocked := false
+	for _, p := range s.CAPolicies {
+		if p.State == "on" && p.Grant == "block" && slices.Contains(p.ClientApps, "legacy") {
+			blocked = true
+		}
+	}
+	if !blocked {
+		f = append(f, "No enabled policy blocks legacy authentication (IMAP/POP/basic SMTP bypass MFA)")
+	}
+	add("C16", "mfa", "Legacy authentication protocols are blocked", "Basic auth can't do MFA, so attackers use it to skip your MFA policy.", f)
+
+	// C17 Vaulted privileged credentials are rotated on schedule
+	f = nil
+	for _, v := range s.Vault {
+		if age := int(nowT().Sub(parseT(v.RotatedAt)).Hours() / 24); age > v.RotationDays {
+			f = append(f, fmt.Sprintf("%s last rotated %d days ago (policy: %d)", v.Name, age, v.RotationDays))
+		}
+	}
+	add("C17", "vault", "Vaulted admin passwords are rotated on schedule and after use", "A shared admin password that never changes is a standing backdoor.", f)
+
+	// C18 No cloud policy grants full admin to a principal
+	f = nil
+	for _, p := range s.CloudPolicies {
+		for _, x := range lintPolicy(p) {
+			if x.Severity == "critical" && len(p.AttachedTo) > 0 {
+				f = append(f, fmt.Sprintf("%s (attached to %s): %s", p.Name, strings.Join(p.AttachedTo, ", "), x.Detail))
+			}
+		}
+	}
+	add("C18", "cloud", "No cloud identity has Action:* on Resource:*", "Least privilege in the cloud: wildcard admin turns one leaked key into a full breach.", f)
+
+	// C19 Sensitive cloud permissions need MFA or just-in-time activation
+	f = nil
+	for _, p := range s.CloudPolicies {
+		for _, x := range lintPolicy(p) {
+			if x.Rule == "sensitive-no-mfa" || x.Rule == "passrole-star" {
+				f = append(f, fmt.Sprintf("%s / %s: %s", p.Name, x.Sid, x.Detail))
+			}
+		}
+	}
+	for _, x := range s.azureFindings() {
+		if x["severity"] == "high" {
+			f = append(f, "Azure: "+x["detail"])
+		}
+	}
+	add("C19", "cloud", "Sensitive cloud permissions require MFA or PIM", "Standing cloud admin with no step-up is the shortest path from phished user to tenant owner.", f)
+
+	// C20 Identity threat alerts are triaged
+	f = nil
+	for _, a := range s.detect() {
+		if (a.Severity == "high" || a.Severity == "critical") && a.Status == "open" {
+			f = append(f, fmt.Sprintf("%s alert %q (%s) is untriaged", a.Severity, a.Title, firstNonEmpty(a.User, a.IP)))
+		}
+	}
+	add("C20", "monitoring", "High-severity identity alerts are triaged", "Detection without response is just logging.", f)
 
 	return out
 }

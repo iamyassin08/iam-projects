@@ -128,6 +128,17 @@ type State struct {
 	PAMSessions    []PAMSession    `json:"pamSessions"`
 	SCIMTokens     []SCIMToken     `json:"scimTokens"`
 	TargetAccounts []TargetAccount `json:"targetAccounts"`
+
+	// Identity security (IdP, MFA, Conditional Access, threat detection, vault, cloud IAM)
+	IdPUsers         []IdPUser         `json:"idpUsers"`
+	CAPolicies       []CAPolicy        `json:"caPolicies"`
+	BlockedIPs       []string          `json:"blockedIps"`
+	SignIns          []SignIn          `json:"signIns"`
+	AlertStates      []AlertState      `json:"alertStates"`
+	Vault            []VaultSecret     `json:"vault"`
+	CloudPrincipals  []CloudPrincipal  `json:"cloudPrincipals"`
+	CloudPolicies    []CloudPolicy     `json:"cloudPolicies"`
+	AzureAssignments []AzureAssignment `json:"azureAssignments"`
 }
 
 // ---------- Store: JSON file persisted on a Docker volume ----------
@@ -153,6 +164,9 @@ func OpenStore(path string) (*Store, error) {
 		return nil, err
 	}
 	st.s = &s
+	if migrate(st.s) {
+		return st, st.save()
+	}
 	return st, nil
 }
 

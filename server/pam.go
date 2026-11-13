@@ -158,11 +158,16 @@ func expirySweeper(every time.Duration) {
 					n++
 				}
 			}
+			for _, v := range s.Vault {
+				if v.CheckedOutBy != "" && !nowT().Before(parseT(v.CheckoutExpires)) {
+					n++
+				}
+			}
 		})
 		if n == 0 {
 			continue
 		}
-		if err := store.Update(func(s *State) error { s.sweepExpired(); return nil }); err != nil {
+		if err := store.Update(func(s *State) error { s.sweepExpired(); s.sweepCheckouts(); return nil }); err != nil {
 			log.Printf("expiry sweep: %v", err)
 		}
 	}

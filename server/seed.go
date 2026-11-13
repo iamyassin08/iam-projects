@@ -163,6 +163,9 @@ func Seed() *State {
 	s.SCIMTokens = []SCIMToken{{ID: s.nextID("TOK"), Name: "Entra ID provisioning", Prefix: "scim_4b1e9c", HashStore: hashToken("seed-token-not-usable"),
 		CreatedBy: "yassin.iam", CreatedAt: daysAgo(21), LastUsed: daysAgo(0), Requests: 1284}}
 
-	s.audit("system", "seed", "tenant", "Demo tenant created with 7 identities, 7 roles, 10 systems")
+	seedSecurity(s)
+	s.AlertStates = []AlertState{}
+
+	s.audit("system", "seed", "tenant", "Demo tenant created with 7 identities, 7 roles, 10 systems, 5 IdP users, 7 Conditional Access policies")
 	return s
 }
