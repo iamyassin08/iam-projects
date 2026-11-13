@@ -67,6 +67,12 @@ export const api = {
   txnPassword: (id, b) => call('POST', `/api/txn/${id}/password`, b, '/idp'),
   txnMFA: (id, code) => call('POST', `/api/txn/${id}/mfa`, { code }, '/idp'),
   txnEnroll: (id, code) => call('POST', `/api/txn/${id}/enroll`, { code }, '/idp'),
+  // self-service profile
+  profile: () => call('GET', '/profile'),
+  saveProfile: (b) => call('PUT', '/profile', b),
+  resetProfile: () => call('DELETE', '/profile'),
+  signOutEverywhere: () => call('POST', '/profile/signout-everywhere'),
+  resetMyMFA: () => call('POST', '/profile/reset-mfa'),
   // Conditional Access
   ca: () => call('GET', '/ca'),
   setPolicy: (id, state) => call('PUT', `/ca/policies/${id}`, { state }),

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Check, Copy, ShieldCheck, ShieldX, ShieldAlert, Smartphone, CheckCircle2, XCircle, MinusCircle } from 'lucide-react'
 import { Badge, toast } from './ui.jsx'
 import { totp, secondsLeft } from './totp.js'
+import { displayName, avatarOf } from './me.js'
 
 // ---------- copyable code block ----------
 
@@ -218,3 +219,18 @@ export function Flow({ nodes, tone = 'violet' }) {
     </div>
   )
 }
+
+// ---------- avatar for the signed-in user ----------
+
+export function UserAvatar({ me, size = 'size-7', text = 'text-[10px]' }) {
+  const src = avatarOf(me)
+  const name = displayName(me) || '?'
+  if (src) return <img src={src} alt="" className={`${size} shrink-0 rounded-full object-cover ring-2 ring-zinc-900`} />
+  const initials = name.split(/[\s.]+/).map((p) => p[0]).filter(Boolean).slice(0, 2).join('').toUpperCase()
+  const hue = [...name].reduce((a, c) => a + c.charCodeAt(0), 0) % 360
+  return (
+    <span className={`inline-flex ${size} shrink-0 items-center justify-center rounded-full ${text} font-bold text-white ring-2 ring-zinc-900`}
+      style={{ background: `linear-gradient(135deg, hsl(${hue} 70% 45%), hsl(${(hue + 40) % 360} 70% 35%))` }}>{initials}</span>
+  )
+}
+

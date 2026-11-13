@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import {
   ShieldCheck, LayoutDashboard, Users, KeyRound, ClipboardCheck, Timer, Grid3x3, Network, Plug, Radar, ScrollText,
-  FlaskConical, Menu, Github, ExternalLink, BookOpen, Fingerprint, Smartphone, Vault as VaultIcon, Cloud as CloudIcon, Activity, Terminal, LogIn, PanelLeftClose, PanelLeftOpen, LifeBuoy,
+  FlaskConical, Menu, Github, ExternalLink, BookOpen, Fingerprint, Smartphone, Vault as VaultIcon, Cloud as CloudIcon, Activity, Terminal, LogIn, PanelLeftClose, PanelLeftOpen, LifeBuoy, ChevronDown, LogOut, UserRound, Settings2, AlertTriangle,
 } from 'lucide-react'
-import { Toaster, DialogHost, usePreline, closeModal } from './ui.jsx'
+import { Toaster, DialogHost, usePreline, closeModal, Badge, toast } from './ui.jsx'
+import { useMe, refreshMe, displayName } from './me.js'
+import { UserAvatar } from './components.jsx'
 import Overview from './pages/Overview.jsx'
 import JML from './pages/JML.jsx'
 import Requests from './pages/Requests.jsx'
@@ -25,6 +27,7 @@ import Monitoring from './pages/Monitoring.jsx'
 import Automation from './pages/Automation.jsx'
 import SignIn from './pages/SignIn.jsx'
 import Login from './pages/Login.jsx'
+import Profile from './pages/Profile.jsx'
 import { api } from './api.js'
 
 export const NAV = [
@@ -33,6 +36,7 @@ export const NAV = [
       { id: 'home', label: 'Security posture', icon: LayoutDashboard, page: Overview },
       { id: 'guide', label: 'Project guide (start here)', icon: BookOpen, page: Guide },
       { id: 'help', label: 'Help & lab guides', icon: LifeBuoy, page: Help },
+      { id: 'profile', label: 'My profile', icon: UserRound, page: Profile },
     ],
   },
   {
@@ -142,47 +146,101 @@ function SideNav({ hash, collapsed }) {
   )
 }
 
+function MenuLink({ href, icon: Icon, children, hint, onClick }) {
+  return (
+    <a href={href} onClick={onClick} className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-zinc-300 hover:bg-white/[0.06] hover:text-white">
+      <Icon className="size-4 text-zinc-500" /><span className="flex-1">{children}</span>{hint && <span className="text-[10px] text-zinc-500">{hint}</span>}
+    </a>
+  )
+}
+
 function AccountMenu() {
-  const [me, setMe] = useState(null)
+  const me = useMe()
   const [open, setOpen] = useState(false)
-  useEffect(() => { api.me().then(setMe).catch(() => {}) }, [])
   useEffect(() => {
     if (!open) return
     const close = (e) => { if (!e.target.closest?.('[data-account]')) setOpen(false) }
+    const esc = (e) => e.key === 'Escape' && setOpen(false)
     document.addEventListener('click', close)
-    return () => document.removeEventListener('click', close)
+    document.addEventListener('keydown', esc)
+    return () => { document.removeEventListener('click', close); document.removeEventListener('keydown', esc) }
   }, [open])
-  if (!me) return null
+  useEffect(() => { const on = () => setOpen(false); window.addEventListener('hashchange', on); return () => window.removeEventListener('hashchange', on) }, [])
+  if (!me) return <span className="skeleton block h-8 w-24 rounded-lg" />
+
+  const authed = me.authenticated
   const kc = me.providers?.find((p) => p.id === 'keycloak')
-  async function signOut() { await api.logout(); window.location.hash = 'login'; window.location.reload() }
+  const groups = me.user?.g || []
+  const isAdmin = groups.includes('iam-admins') || groups.includes('iam-admin')
+  const hasMFA = (me.user?.amr || []).some((a) => a === 'mfa' || a === 'otp')
+  const close = () => setOpen(false)
+  async function signOut() { await api.logout(); window.location.hash = 'login'; await refreshMe(); toast('Signed out') }
+  async function everywhere() { await api.signOutEverywhere(); window.location.hash = 'login'; await refreshMe(); toast('Signed out of every session') }
+
   return (
     <div className="relative" data-account>
-      {me.authenticated ? (
-        <button type="button" onClick={() => setOpen(!open)} aria-expanded={open}
-          className="flex items-center gap-2 rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1.5 text-xs font-semibold text-emerald-200 hover:bg-emerald-500/15">
-          <span className="size-1.5 rounded-full bg-emerald-400" />{me.user.u}<span className="hidden text-emerald-300/70 sm:inline">· {me.user.idp === 'keycloak' ? 'Keycloak' : 'built-in IdP'}</span>
+      {authed ? (
+        <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} aria-haspopup="menu" aria-label="Account menu"
+          className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] py-1 pe-2.5 ps-1 text-xs font-semibold text-zinc-200 transition hover:border-white/20 hover:bg-white/[0.06]">
+          <span className="relative"><UserAvatar me={me} />{!hasMFA && <span className="absolute -end-0.5 -top-0.5 size-2 rounded-full bg-amber-400 ring-2 ring-zinc-950" title="Signed in without MFA" />}</span>
+          <span className="hidden max-w-32 truncate sm:inline">{displayName(me)}</span>
+          <ChevronDown className={`size-3.5 text-zinc-500 transition ${open ? 'rotate-180' : ''}`} />
         </button>
       ) : (
-        <a href="#login"
-          className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-lg shadow-violet-900/30 hover:from-violet-500 hover:to-indigo-500">
-          <LogIn className="size-3.5" /><span className="whitespace-nowrap">Sign in</span>
-        </a>
+        <div className="flex items-center gap-1">
+          <a href="#login" className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-lg shadow-violet-900/30 hover:from-violet-500 hover:to-indigo-500">
+            <LogIn className="size-3.5" /><span className="whitespace-nowrap">Sign in</span>
+          </a>
+          <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} aria-haspopup="menu" aria-label="Sign-in options"
+            className="inline-flex size-8 items-center justify-center rounded-lg border border-white/10 text-zinc-400 hover:bg-white/5 hover:text-zinc-200"><ChevronDown className="size-4" /></button>
+        </div>
       )}
+
       {open && (
-        <div className="absolute end-0 top-full z-50 mt-2 w-64 overflow-hidden rounded-xl border border-white/10 bg-zinc-900 shadow-2xl shadow-black/60 animate-scale-in">
-          {me.authenticated ? (
-            <div className="p-2 text-sm">
-              <div className="px-2.5 py-2"><div className="font-semibold text-white">{me.user.n}</div><div className="text-xs text-zinc-500">{me.user.e}</div></div>
-              <a href="#sso" onClick={() => setOpen(false)} className="block rounded-lg px-2.5 py-2 text-zinc-300 hover:bg-white/5">View my tokens</a>
-              <button type="button" onClick={signOut} className="block w-full rounded-lg px-2.5 py-2 text-start text-rose-300 hover:bg-white/5">Sign out</button>
+        <div role="menu" className="absolute end-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-2xl border border-white/10 bg-zinc-900/95 text-sm shadow-2xl shadow-black/60 backdrop-blur animate-scale-in">
+          {authed ? (<>
+            <div className="flex items-center gap-3 border-b border-white/[0.06] p-4">
+              <UserAvatar me={me} size="size-11" text="text-sm" />
+              <div className="min-w-0">
+                <div className="truncate font-semibold text-white">{displayName(me)}</div>
+                <div className="truncate text-xs text-zinc-500">{me.user.e || me.user.u}</div>
+                <div className="mt-1.5 flex flex-wrap gap-1">
+                  <Badge tone="info">{me.user.idp === 'keycloak' ? 'Keycloak' : 'Built-in IdP'}</Badge>
+                  {isAdmin && <Badge tone="violet">Admin</Badge>}
+                  {hasMFA ? <Badge tone="ok">MFA</Badge> : <Badge tone="warn">No MFA</Badge>}
+                </div>
+              </div>
             </div>
-          ) : (
-            <div className="p-2 text-sm">
-              <div className="px-2.5 pb-1.5 pt-1 text-[11px] text-zinc-500">Sign in with single sign-on and MFA</div>
-              <a href="/auth/login" className="block rounded-lg px-2.5 py-2 hover:bg-white/5"><div className="font-medium text-zinc-100">Assafwah IdP (built-in)</div><div className="text-[11px] text-zinc-500">Demo users, password test123</div></a>
+            {!hasMFA && (
+              <a href="#mfa" onClick={close} className="mx-2 mt-2 flex items-start gap-2 rounded-lg border border-amber-500/25 bg-amber-500/10 px-2.5 py-2 text-xs text-amber-200">
+                <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />This session didn't use MFA. CA002 is report-only, so it was allowed. See why.
+              </a>
+            )}
+            <div className="p-2">
+              <MenuLink href="#profile" icon={UserRound} onClick={close}>My profile</MenuLink>
+              <MenuLink href="#profile?tab=access" icon={KeyRound} onClick={close} hint={me.profile ? '' : ''}>My access</MenuLink>
+              <MenuLink href="#profile?tab=security" icon={ShieldCheck} onClick={close}>Security & sessions</MenuLink>
+              <MenuLink href="#profile?tab=activity" icon={Activity} onClick={close}>My activity</MenuLink>
+              <MenuLink href="#profile?tab=preferences" icon={Settings2} onClick={close}>Preferences</MenuLink>
+              <MenuLink href="#sso" icon={Fingerprint} onClick={close}>View my tokens</MenuLink>
+              {isAdmin && <MenuLink href="#lab" icon={FlaskConical} onClick={close} hint="admin">Controls lab</MenuLink>}
+            </div>
+            <div className="border-t border-white/[0.06] p-2">
+              <MenuLink href="#help" icon={LifeBuoy} onClick={close}>Help & lab guides</MenuLink>
+              <button type="button" onClick={signOut} className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-start text-rose-300 hover:bg-rose-500/10"><LogOut className="size-4" />Sign out</button>
+              <button type="button" onClick={everywhere} className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-start text-xs text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-300"><LogOut className="size-3.5" />Sign out everywhere</button>
+            </div>
+          </>) : (
+            <div className="p-2">
+              <div className="px-2.5 pb-1.5 pt-1 text-[11px] text-zinc-500">Single sign-on with MFA · password <span className="font-mono text-zinc-300">test123</span></div>
+              <a href="/auth/login" className="block rounded-lg px-2.5 py-2 hover:bg-white/5"><div className="font-medium text-zinc-100">Assafwah IdP (built-in)</div><div className="text-[11px] text-zinc-500">Demo authenticator included</div></a>
               {kc?.configured
-                ? <a href="/auth/login?idp=keycloak" className="block rounded-lg px-2.5 py-2 hover:bg-white/5"><div className="font-medium text-zinc-100">Keycloak</div><div className="text-[11px] text-zinc-500">keycloak.assafwahinc.com · test123</div></a>
+                ? <a href="/auth/login?idp=keycloak" className="block rounded-lg px-2.5 py-2 hover:bg-white/5"><div className="font-medium text-zinc-100">Keycloak</div><div className="text-[11px] text-zinc-500">keycloak.assafwahinc.com</div></a>
                 : <div className="rounded-lg px-2.5 py-2 opacity-50"><div className="font-medium text-zinc-100">Keycloak</div><div className="text-[11px] text-zinc-500">Not connected on this deployment</div></div>}
+              <div className="mt-1 border-t border-white/[0.06] pt-1">
+                <MenuLink href="#login" icon={UserRound} onClick={close}>All sign-in options & demo accounts</MenuLink>
+                <MenuLink href="#help" icon={LifeBuoy} onClick={close}>Help & lab guides</MenuLink>
+              </div>
             </div>
           )}
         </div>
@@ -216,6 +274,11 @@ function useCollapsed() {
     const on = () => setDesktop(mq.matches)
     mq.addEventListener('change', on)
     return () => mq.removeEventListener('change', on)
+  }, [])
+  useEffect(() => {
+    const on = () => { try { setC(localStorage.getItem('iam.sidebar') === 'collapsed') } catch { /* ignore */ } }
+    window.addEventListener('iam:sidebar', on)
+    return () => window.removeEventListener('iam:sidebar', on)
   }, [])
   const toggle = () => setC((v) => { try { localStorage.setItem('iam.sidebar', v ? 'open' : 'collapsed') } catch { /* private mode */ } return !v })
   return [c && desktop, toggle]
