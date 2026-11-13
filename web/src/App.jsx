@@ -86,22 +86,7 @@ function useHash() {
   return hash
 }
 
-function WhoAmI() {
-  const [me, setMe] = useState(null)
-  useEffect(() => { api.me().then(setMe).catch(() => {}) }, [])
-  if (!me) return null
-  return me.authenticated ? (
-    <a href="#sso" className="mb-3 flex items-center gap-2 rounded-lg bg-emerald-500/10 px-2.5 py-2 text-[11px] text-emerald-300 ring-1 ring-emerald-500/20">
-      <span className="size-1.5 rounded-full bg-emerald-400" /> Signed in as {me.user.u}
-    </a>
-  ) : (
-    <a href="/auth/login" className="mb-3 flex items-center gap-2 rounded-lg bg-violet-500/10 px-2.5 py-2 text-[11px] font-semibold text-violet-200 ring-1 ring-violet-500/30 hover:bg-violet-500/20">
-      <LogIn className="size-3.5" /><span className="whitespace-nowrap">Sign in</span> with SSO + MFA
-    </a>
-  )
-}
-
-function SideNav({ hash, collapsed, onToggle }) {
+function SideNav({ hash, collapsed }) {
   return (
     <nav className="flex h-full flex-col">
       <div className={`flex items-center gap-2 py-5 ${collapsed ? 'flex-col px-2' : 'px-5'}`}>
@@ -117,10 +102,6 @@ function SideNav({ hash, collapsed, onToggle }) {
             <span className="block truncate text-[10px] uppercase tracking-[0.16em] text-zinc-500">Identity governance lab</span>
           </span>}
         </a>
-        <button type="button" onClick={onToggle} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          className="hidden size-8 shrink-0 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-white/[0.06] hover:text-white lg:inline-flex">
-          {collapsed ? <PanelLeftOpen className="size-4" /> : <PanelLeftClose className="size-4" />}
-        </button>
         <button type="button" data-hs-overlay="#sidebar" aria-label="Close navigation"
           className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-zinc-400 hover:bg-white/[0.06] hover:text-white lg:hidden">
           <PanelLeftClose className="size-4" />
@@ -149,7 +130,6 @@ function SideNav({ hash, collapsed, onToggle }) {
         ))}
       </div>
       {!collapsed && <div className="border-t border-white/[0.06] p-4 text-[11px] text-zinc-500">
-        <WhoAmI />
         <a href="https://github.com/iamyassin08/iam-projects" target="_blank" rel="noreferrer" className="flex items-center gap-2 hover:text-zinc-300">
           <Github className="size-3.5" /> Source on GitHub <ExternalLink className="size-3" />
         </a>
@@ -261,7 +241,7 @@ export default function App() {
       {/* sidebar: Preline offcanvas on mobile, fixed on desktop */}
       <aside id="sidebar" tabIndex={-1} aria-label="Sidebar"
         className={`hs-overlay hs-overlay-open:translate-x-0 fixed inset-y-0 start-0 z-[60] hidden w-64 -translate-x-full transform ${collapsed ? 'lg:w-16' : 'lg:w-64'} border-e border-white/[0.06] bg-zinc-950/95 backdrop-blur transition-all duration-300 lg:bottom-0 lg:end-auto lg:block lg:translate-x-0`}>
-        <SideNav hash={hash} collapsed={collapsed} onToggle={toggleCollapsed} />
+        <SideNav hash={hash} collapsed={collapsed} />
       </aside>
 
       <main className={`transition-[padding] duration-300 ${collapsed ? 'lg:ps-16' : 'lg:ps-64'}`}>
