@@ -40,17 +40,40 @@ curl https://iam.assafwahinc.com/api/lab/checks  # 20 control results
 
 Open the site and you should see the home screen with the four project cards.
 
-## Auto-deploy
+## Auto-deploy (GitHub Actions → Coolify)
 
-Turn on **Automatic deployment** under the resource's settings (GitHub App), or copy the Coolify webhook URL
-into the repo's **Settings → Webhooks** so every push to `main` redeploys.
+`.github/workflows/deploy.yml` runs on every push or merged pull request to `main` that touches `backend/`, `frontend/`,
+the `Dockerfile` or `docker-compose.yml`. It runs `gofmt`, `go vet`, `go test`, the frontend build and a Docker build, and
+only if all pass it calls Coolify's deploy API. Pull requests run the same checks without deploying. Doc-only changes don't redeploy.
+
+One-time setup:
+
+1. **Coolify → Keys & Tokens → API tokens → Create.** Give it the *deploy* permission and copy it.
+2. **Find the app UUID:** open IAM Projects in Coolify; the UUID is the last part of the URL
+   (`…/project/…/environment/…/application/<uuid>`).
+3. **GitHub → repo Settings → Secrets and variables → Actions → New repository secret**, three times:
+
+   | Name | Value |
+   |---|---|
+   | `COOLIFY_URL` | your Coolify dashboard address, e.g. `https://cloud.example.com` |
+   | `COOLIFY_TOKEN` | the token from step 1 |
+   | `COOLIFY_APP_UUID` | the UUID from step 2 |
+
+4. **Coolify → IAM Projects → General:** leave Build Pack `Dockerfile` at `/Dockerfile` (unchanged by the
+   backend/frontend layout). Turn **off** any other auto-deploy (GitHub App auto deploy or a webhook) so each push deploys once.
+5. Push a change, or **Actions → Test and deploy → Run workflow**. The run's *deploy* step prints Coolify's response.
+
+The secrets live only in GitHub's encrypted store; nothing about your Coolify server is committed to this public repo.
+
+Alternative without Actions: connect the repo through Coolify's GitHub App, turn on **Auto Deploy**, and set
+**Watch Paths** to `backend/**`, `frontend/**`, `Dockerfile` so only app changes trigger a build.
 
 ## Troubleshooting
 
 | Symptom | Fix |
 |---|---|
-| Build fails at `npm ci` | `web/package-lock.json` must be committed and match `package.json`. |
-| Build fails at `go build` | `server/go.mod` must exist; the server uses only the Go standard library. |
+| Build fails at `npm ci` | `frontend/package-lock.json` must be committed and match `package.json`. |
+| Build fails at `go build` | `backend/go.mod` must exist; the server uses only the Go standard library. |
 | `permission denied` writing `/data/iam.json` | The container runs as UID 10001. Make sure the volume is writable, or recreate it so the image's `chown` applies. |
 | 502 from the proxy | The exposed port must be `8080`. |
 | Data resets on redeploy | The persistent volume at `/data` is missing. |

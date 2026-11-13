@@ -229,7 +229,7 @@ with a record an auditor can sample later.
 
 ## The 14 control checks
 
-`GET /api/lab/checks` runs every control in [`server/lab.go`](../server/lab.go) against the current state. The seed tenant starts at **8 / 14** on purpose. The full list, framework mapping and the seeded findings are in [`CONTROLS.md`](CONTROLS.md).
+`GET /api/lab/checks` runs every control in [`backend/lab.go`](../backend/lab.go) against the current state. The seed tenant starts at **8 / 14** on purpose. The full list, framework mapping and the seeded findings are in [`CONTROLS.md`](CONTROLS.md).
 
 ## Visuals on the Controls lab page
 

@@ -81,4 +81,4 @@ be filtered and exported to CSV. This is what you hand an auditor for an access 
 - Access certification campaigns with revoke-on-non-response.
 - Just-in-time privileged access with expiry enforcement and break-glass.
 - Account reconciliation (orphan, rogue, dormant) and explainable risk scoring.
-- Writing controls as testable assertions mapped to NIST SP 800-53, SOX and HIPAA (`server/lab.go`, `docs/CONTROLS.md`).
+- Writing controls as testable assertions mapped to NIST SP 800-53, SOX and HIPAA (`backend/lab.go`, `docs/CONTROLS.md`).

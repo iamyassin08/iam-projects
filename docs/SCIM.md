@@ -1,6 +1,6 @@
 # SCIM 2.0 service provider
 
-IAM Projects exposes a SCIM 2.0 API ([RFC 7643](https://www.rfc-editor.org/rfc/rfc7643) schema, [RFC 7644](https://www.rfc-editor.org/rfc/rfc7644) protocol) so an identity provider can provision identities into it. The implementation is [`server/scim.go`](../server/scim.go); tests are in [`server/features_test.go`](../server/features_test.go).
+IAM Projects exposes a SCIM 2.0 API ([RFC 7643](https://www.rfc-editor.org/rfc/rfc7643) schema, [RFC 7644](https://www.rfc-editor.org/rfc/rfc7644) protocol) so an identity provider can provision identities into it. The implementation is [`backend/scim.go`](../backend/scim.go); tests are in [`backend/features_test.go`](../backend/features_test.go).
 
 **Base URL:** `https://iam.assafwahinc.com/scim/v2` (or `http://localhost:8080/scim/v2`)
 
