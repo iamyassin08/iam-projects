@@ -4,6 +4,7 @@ import { api } from '../api.js'
 import { Badge, toast, usePreline } from '../ui.jsx'
 import { refreshMe, displayName } from '../me.js'
 import { UserAvatar } from '../components.jsx'
+import IdpFlow from './IdpFlow.jsx'
 
 // Sign-in page in the style of Preline's auth templates
 // (https://preline.co/examples/forms-authentication.html): centred card,
@@ -46,7 +47,14 @@ export default function Login() {
   const kc = me?.providers?.find((p) => p.id === 'keycloak')
   const hint = encodeURIComponent(username.trim())
   const builtinHref = `/auth/login${hint ? `?login_hint=${hint}` : ''}`
-  const kcHref = `/auth/login?idp=keycloak${hint ? `&login_hint=${hint}` : ''}`
+  const kcHref = `/auth/login?idp=keycloak&return=login${KC_USERS.includes(username.trim()) ? `&login_hint=${hint}` : ''}`
+  // Opens the OIDC transaction without navigating: the IdP answers JSON when asked.
+  async function startBuiltin(u) {
+    const res = await fetch(`/auth/login?return=login&login_hint=${encodeURIComponent(u.trim())}`, { headers: { Accept: 'application/json' }, credentials: 'same-origin' })
+    const d = await res.json().catch(() => ({}))
+    if (!res.ok || !d.txn) throw new Error(d.error || 'Could not start sign-in')
+    return d.txn
+  }
   const names = [...new Set([...users.map((u) => u.username), ...KC_USERS])]
   async function signOut() { await api.logout(); await refreshMe(); setMe(await api.me()); toast('Signed out') }
 
@@ -87,59 +95,26 @@ export default function Login() {
             </div>
 
             <div className="mt-5">
-              {/* provider buttons, Preline "Sign in with Google" style */}
-              <div className="grid gap-3">
-                <a href={builtinHref} className={btnGhost}>
-                  <ShieldCheck className="size-5 text-violet-300" /> Sign in with Assafwah IdP
+              {/* federated provider, Preline "Sign in with Google" style */}
+              {kc?.configured ? (
+                <a href={kcHref} className={btnGhost}>
+                  <KeycloakMark src={kc.logo} /> Sign in with Keycloak
                 </a>
-                {kc?.configured ? (
-                  <a href={kcHref} className={btnGhost}>
-                    <KeycloakMark src={kc.logo} /> Sign in with Keycloak
-                  </a>
-                ) : (
-                  <span className={`${btn} cursor-not-allowed border-white/[0.06] bg-zinc-900 text-zinc-500`} title="Set OIDC_ISSUER to enable">
-                    <Building2 className="size-5" /> Keycloak isn't connected here
-                  </span>
-                )}
-              </div>
+              ) : (
+                <span className={`${btn} cursor-not-allowed border-white/[0.06] bg-zinc-900 text-zinc-500`} title="Set OIDC_ISSUER to enable">
+                  <Building2 className="size-5" /> Keycloak isn't connected here
+                </span>
+              )}
+              {kc?.configured && <p className="mt-1.5 text-center text-[11px] text-zinc-500">Keycloak users: {KC_USERS.join(', ')}. You'll enter the password on Keycloak's page.</p>}
 
-              <div className="flex items-center py-4 text-xs uppercase text-zinc-500 before:me-6 before:flex-1 before:border-t before:border-white/10 after:ms-6 after:flex-1 after:border-t after:border-white/10">Or choose an account</div>
+              <div className="flex items-center py-4 text-xs uppercase text-zinc-500 before:me-6 before:flex-1 before:border-t before:border-white/10 after:ms-6 after:flex-1 after:border-t after:border-white/10">Or with Assafwah IdP</div>
 
-              <form onSubmit={(e) => { e.preventDefault(); window.location.assign(builtinHref) }}>
-                <div className="grid gap-y-4">
-                  <div>
-                    <label htmlFor="login-user" className="mb-2 block text-sm text-white">Username</label>
-                    <div className="relative">
-                      <input id="login-user" type="text" autoComplete="username" value={username} onChange={(e) => setUsername(e.target.value)} required
-                        className="block w-full rounded-lg border border-white/10 bg-zinc-950/70 px-4 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/30 focus:outline-none" />
-                    </div>
-                    <div className="mt-2 flex flex-wrap gap-1.5">
-                      {names.map((n) => (
-                        <button key={n} type="button" onClick={() => setUsername(n)}
-                          className={`rounded-full px-2.5 py-1 text-xs ring-1 ring-inset transition ${username === n ? 'bg-violet-500/20 text-violet-100 ring-violet-500/40' : 'text-zinc-400 ring-white/10 hover:text-zinc-200'}`}>
-                          {n}<span className="ms-1 text-zinc-500">{ROLES[n] ? `· ${ROLES[n]}` : ''}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-2 rounded-lg bg-white/[0.03] p-3 text-xs text-zinc-400">
-                    <LockKeyhole className="mt-0.5 size-4 shrink-0 text-zinc-500" />
-                    <span>You'll type the password on the identity provider's page, not here. The username is passed along as an OIDC <span className="font-mono">login_hint</span>.</span>
-                  </div>
-
-                  <button type="submit" className={`${btn} border-transparent bg-violet-600 text-white hover:bg-violet-700 focus:bg-violet-700`}>
-                    Continue with Assafwah IdP <ArrowRight className="size-4" />
-                  </button>
-                  {kc?.configured && KC_USERS.includes(username.trim()) && (
-                    <a href={kcHref} className={btnGhost}><KeycloakMark src={kc.logo} /> Continue with Keycloak</a>
-                  )}
-                  {kc?.configured && username.trim() && !KC_USERS.includes(username.trim()) && (
-                    <p className="text-center text-xs text-zinc-500">{username.trim()} only exists in the built-in IdP.</p>
-                  )}
-                </div>
-              </form>
-              </div>
+              {/* built-in IdP, embedded: password, Conditional Access and MFA happen right here */}
+              <IdpFlow start={startBuiltin} username={username} setUsername={setUsername} roles={ROLES} />
+              <p className="mt-3 text-center text-[11px] text-zinc-500">
+                Same OIDC flow (PKCE, state, nonce) without leaving this page. <a href={builtinHref} className="text-violet-300 hover:underline">Use the hosted IdP page</a>
+              </p>
+            </div>
             </>)}
         </div>
       </div>
