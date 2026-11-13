@@ -91,7 +91,7 @@ func seedSecurity(s *State) {
   "Version": "2012-10-17",
   "Statement": [
     { "Sid": "ReadClaimsExtracts", "Effect": "Allow", "Action": ["s3:GetObject"], "Resource": "arn:aws:s3:::acme-rcm-extracts/claims/*",
-      "Condition": { "IpAddress": { "aws:SourceIp": "73.120.44.0/24" } } },
+      "Condition": { "IpAddress": { "aws:SourceIp": "198.51.100.0/24" } } },
     { "Sid": "ListPrefix", "Effect": "Allow", "Action": "s3:ListBucket", "Resource": "arn:aws:s3:::acme-rcm-extracts" }
   ]
 }`},
@@ -195,4 +195,3 @@ func migrate(s *State) bool {
 	s.audit("system", "migrate", "tenant", "Added identity security modules: IdP, MFA, Conditional Access, sign-in log, vault, cloud IAM")
 	return true
 }
-

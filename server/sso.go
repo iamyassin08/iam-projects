@@ -273,7 +273,7 @@ func ssoCallback(w http.ResponseWriter, r *http.Request) {
 	atH, atC, _ := decodeJWT(ts.AccessToken) // Keycloak access tokens are JWTs too; opaque tokens just won't decode
 	tokenStore.Lock()
 	tokenStore.m[sess.SID] = map[string]any{"provider": p.Name, "issuer": p.Issuer, "idToken": map[string]any{"raw": ts.IDToken, "header": idH, "claims": idC},
-		"accessToken": map[string]any{"raw": ts.AccessToken, "header": atH, "claims": atC}, "scope": ts.Scope, "expiresIn": ts.ExpiresIn, "verified": true}
+		"accessToken": map[string]any{"raw": ts.AccessToken, "header": atH, "claims": atC}, "scope": ts.Scope, "expiresIn": ts.ExpiresIn, "verified": true, "storedAt": nowT().Unix()}
 	tokenStore.Unlock()
 	_ = store.Update(func(s *State) error {
 		s.audit(sess.Username, "sso.login", sess.Username, fmt.Sprintf("Signed in via %s (amr: %s)", p.Name, strings.Join(amr, ",")))

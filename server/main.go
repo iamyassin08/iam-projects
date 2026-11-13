@@ -32,9 +32,10 @@ func main() {
 
 	mux := routes(staticDir)
 	go expirySweeper(15 * time.Second)
+	go housekeeping()
 
 	log.Printf("IAM Projects listening on :%s (data=%s)", port, dbPath)
-	log.Fatal(http.ListenAndServe(":"+port, logReq(mux)))
+	log.Fatal(newServer(port, secure(rateLimit(logReq(mux)))).ListenAndServe())
 }
 
 // routes wires every endpoint; tests use it to drive the real router.
@@ -120,7 +121,7 @@ func fail(w http.ResponseWriter, code int, msg string) {
 }
 
 func decode(r *http.Request, v any) error {
-	return json.NewDecoder(http.MaxBytesReader(nil, r.Body, 1<<20)).Decode(v)
+	return json.NewDecoder(http.MaxBytesReader(nil, r.Body, 64<<10)).Decode(v)
 }
 
 func actor(r *http.Request) string {
@@ -473,6 +474,9 @@ func postRequest(w http.ResponseWriter, r *http.Request) {
 		conflict := ""
 		if rule := s.sodConflict(id.ID, ent.ID); rule != nil {
 			conflict = rule.ID + ": " + rule.Description
+		}
+		if err := s.atCapacity("request"); err != nil {
+			return err
 		}
 		out = AccessRequest{s.nextID("REQ"), id.ID, ent.ID, in.Justification, "pending", conflict, now(), "", "", ""}
 		s.Requests = append(s.Requests, out)

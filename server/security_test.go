@@ -220,7 +220,7 @@ func TestCloudPolicySimulator(t *testing.T) {
 		_, out := c.do("POST", "/api/cloud/simulate", map[string]any{"principal": p, "action": a, "resource": r, "context": ctx})
 		return out["decision"].(string)
 	}
-	us := map[string]any{"region": "us-east-1", "mfa": true, "sourceIp": "73.120.44.18"}
+	us := map[string]any{"region": "us-east-1", "mfa": true, "sourceIp": "198.51.100.18"}
 	cases := []struct{ p, a, r, want string }{
 		{"user/omar.farouk", "lambda:UpdateFunctionCode", "arn:aws:lambda:us-east-1:111122223333:function:dev-api", "allowed"},
 		{"user/omar.farouk", "lambda:UpdateFunctionCode", "arn:aws:lambda:us-east-1:111122223333:function:prod-api", "implicit-deny"},

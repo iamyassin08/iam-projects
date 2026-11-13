@@ -13,6 +13,9 @@ type newIdentity struct {
 }
 
 func (s *State) createIdentity(actor string, in newIdentity) (*Identity, error) {
+	if err := s.atCapacity("identity"); err != nil {
+		return nil, err
+	}
 	if strings.TrimSpace(in.Name) == "" {
 		return nil, httpErr{400, "name is required"}
 	}
