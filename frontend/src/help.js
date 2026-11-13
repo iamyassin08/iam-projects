@@ -183,7 +183,7 @@ Ask me which platform and free tier I am using before you start, then go one ste
 export const MASTER_PROMPT = `Act as a senior IAM engineer and career mentor. I am preparing for an entry-level IAM analyst role and building a hands-on portfolio. I will paste one lab at a time. For each lab: ask which platform I'm using (Entra ID, Okta, AWS, Azure or Keycloak), then walk me through environment setup, tools, configuration, policies to create, test cases to validate access, logs to review, and how to document the results for my resume. Keep each step short, wait for me to confirm before continuing, and point out common mistakes.`
 
 export const HOW_TO = [
-  ['Sign in', 'Use Sign in (top right). The built-in IdP users share the password Demo!2026 and the demo authenticator shows their codes. Keycloak demo users use Demo!2026-Keycloak.'],
+  ['Sign in', 'Use Sign in (top right). The built-in IdP users share the password test123 and the demo authenticator shows their codes. Keycloak demo users use test123.'],
   ['Change anything', 'The whole tenant is a sandbox: approve, revoke, toggle policies, edit cloud policies, apply HR feeds. Nothing connects to real systems.'],
   ['Start over', 'Security posture → Reset demo restores the seed data and its twelve audit findings.'],
   ['See your impact', 'The Controls lab re-runs 20 controls after every change; the audit log shows who did what.'],

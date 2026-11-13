@@ -24,6 +24,7 @@ import Cloud from './pages/Cloud.jsx'
 import Monitoring from './pages/Monitoring.jsx'
 import Automation from './pages/Automation.jsx'
 import SignIn from './pages/SignIn.jsx'
+import Login from './pages/Login.jsx'
 import { api } from './api.js'
 
 export const NAV = [
@@ -153,7 +154,7 @@ function AccountMenu() {
   }, [open])
   if (!me) return null
   const kc = me.providers?.find((p) => p.id === 'keycloak')
-  async function signOut() { await api.logout(); window.location.reload() }
+  async function signOut() { await api.logout(); window.location.hash = 'login'; window.location.reload() }
   return (
     <div className="relative" data-account>
       {me.authenticated ? (
@@ -162,10 +163,10 @@ function AccountMenu() {
           <span className="size-1.5 rounded-full bg-emerald-400" />{me.user.u}<span className="hidden text-emerald-300/70 sm:inline">· {me.user.idp === 'keycloak' ? 'Keycloak' : 'built-in IdP'}</span>
         </button>
       ) : (
-        <button type="button" onClick={() => setOpen(!open)} aria-expanded={open}
+        <a href="#login"
           className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-lg shadow-violet-900/30 hover:from-violet-500 hover:to-indigo-500">
           <LogIn className="size-3.5" /><span className="whitespace-nowrap">Sign in</span>
-        </button>
+        </a>
       )}
       {open && (
         <div className="absolute end-0 top-full z-50 mt-2 w-64 overflow-hidden rounded-xl border border-white/10 bg-zinc-900 shadow-2xl shadow-black/60 animate-scale-in">
@@ -178,9 +179,9 @@ function AccountMenu() {
           ) : (
             <div className="p-2 text-sm">
               <div className="px-2.5 pb-1.5 pt-1 text-[11px] text-zinc-500">Sign in with single sign-on and MFA</div>
-              <a href="/auth/login" className="block rounded-lg px-2.5 py-2 hover:bg-white/5"><div className="font-medium text-zinc-100">Assafwah IdP (built-in)</div><div className="text-[11px] text-zinc-500">Demo users, password Demo!2026</div></a>
+              <a href="/auth/login" className="block rounded-lg px-2.5 py-2 hover:bg-white/5"><div className="font-medium text-zinc-100">Assafwah IdP (built-in)</div><div className="text-[11px] text-zinc-500">Demo users, password test123</div></a>
               {kc?.configured
-                ? <a href="/auth/login?idp=keycloak" className="block rounded-lg px-2.5 py-2 hover:bg-white/5"><div className="font-medium text-zinc-100">Keycloak</div><div className="text-[11px] text-zinc-500">keycloak.assafwahinc.com · Demo!2026-Keycloak</div></a>
+                ? <a href="/auth/login?idp=keycloak" className="block rounded-lg px-2.5 py-2 hover:bg-white/5"><div className="font-medium text-zinc-100">Keycloak</div><div className="text-[11px] text-zinc-500">keycloak.assafwahinc.com · test123</div></a>
                 : <div className="rounded-lg px-2.5 py-2 opacity-50"><div className="font-medium text-zinc-100">Keycloak</div><div className="text-[11px] text-zinc-500">Not connected on this deployment</div></div>}
             </div>
           )}
@@ -227,9 +228,10 @@ export default function App() {
   const Page = current.page
   usePreline([hash])
 
-  useEffect(() => { document.title = hash === 'signin' ? 'Sign in · Assafwah IdP' : `${current.label} · IAM Projects` }, [current, hash])
+  useEffect(() => { document.title = hash === 'login' ? 'Sign in · IAM Projects' : hash === 'signin' ? 'Sign in · Assafwah IdP' : `${current.label} · IAM Projects` }, [current, hash])
 
   if (hash === 'signin') return <><SignIn /><Toaster /></>
+  if (hash === 'login') return <><Login /><Toaster /></>
 
   return (
     <div className="relative min-h-screen">
