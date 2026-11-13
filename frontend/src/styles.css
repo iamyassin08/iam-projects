@@ -1,0 +1,98 @@
+@import "tailwindcss";
+
+/* Preline UI: state variants (hs-overlay-open:, hs-dropdown-open:, hs-tooltip-shown:, hs-accordion-active:, hs-tab-active: …) */
+@source "../node_modules/preline/dist/*.js";
+@import "preline/variants.css";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Unbounded", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --animate-fade-up: fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-fade-in: fade-in 0.4s ease-out both;
+  --animate-scale-in: scale-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-slide-in: slide-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-shimmer: shimmer 1.6s linear infinite;
+  --animate-glow: glow 3s ease-in-out infinite;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-ping-slow: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+  --animate-grid: grid-pan 20s linear infinite;
+
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes scale-in {
+    from { opacity: 0; transform: scale(0.94); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  @keyframes slide-in {
+    from { opacity: 0; transform: translateX(24px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes shimmer {
+    from { background-position: -200% 0; }
+    to { background-position: 200% 0; }
+  }
+  @keyframes glow {
+    0%, 100% { opacity: 0.45; }
+    50% { opacity: 0.9; }
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+  @keyframes grid-pan {
+    from { background-position: 0 0; }
+    to { background-position: 48px 48px; }
+  }
+}
+
+@layer base {
+  html { color-scheme: dark; }
+  body {
+    @apply bg-zinc-950 text-zinc-200 font-sans antialiased;
+  }
+  ::selection { @apply bg-violet-500/40 text-white; }
+  * { scrollbar-width: thin; scrollbar-color: rgb(63 63 70) transparent; }
+}
+
+@layer components {
+  .panel {
+    @apply rounded-2xl border border-white/[0.07] bg-zinc-900/60 backdrop-blur-sm shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset];
+  }
+  .input {
+    @apply block w-full rounded-lg border border-white/10 bg-zinc-950/70 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500
+      transition focus:border-violet-500 focus:ring-2 focus:ring-violet-500/30 focus:outline-none disabled:opacity-50;
+  }
+  .label { @apply mb-1.5 block text-xs font-medium tracking-wide text-zinc-400; }
+  .eyebrow { @apply text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500; }
+  .th { @apply px-3 py-2.5 text-start text-[11px] font-semibold uppercase tracking-wider text-zinc-500; }
+  .td { @apply px-3 py-3 align-top text-sm; }
+  .row { @apply border-t border-white/[0.06] transition-colors hover:bg-white/[0.025]; }
+  .code { @apply rounded bg-zinc-800/80 px-1.5 py-0.5 font-mono text-[12px] text-violet-200; }
+  .skeleton {
+    @apply rounded-lg bg-[linear-gradient(90deg,rgba(255,255,255,0.03),rgba(255,255,255,0.08),rgba(255,255,255,0.03))] bg-[length:200%_100%] animate-shimmer;
+  }
+  .grid-bg {
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
