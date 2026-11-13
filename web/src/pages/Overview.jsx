@@ -1,6 +1,6 @@
 import {
   Users, ShieldAlert, Timer, ClipboardCheck, AlertOctagon, Flame, RotateCcw, ArrowRight, FlaskConical, Plug, KeyRound,
-  Grid3x3, Radar, CheckCircle2, XCircle,
+  Grid3x3, Radar, CheckCircle2, XCircle, Fingerprint, Smartphone, Vault, Cloud, Activity, Terminal, BookOpen,
 } from 'lucide-react'
 import { api } from '../api.js'
 import { useLoad, Stat, Card, Ring, Badge, Button, ErrorBox, Loading, ask, toast, Avatar, levelTone, Progress, usePreline } from '../ui.jsx'
@@ -13,7 +13,13 @@ const MODULES = [
   { id: 'pam', icon: Timer, title: 'Just-in-time access', text: 'Time-boxed elevation with tickets, break-glass and automatic expiry.', tag: 'NIST AC-6(5)' },
   { id: 'roles', icon: Grid3x3, title: 'Role matrix', text: 'RBAC design that blocks toxic combinations at the role level.', tag: 'Least privilege' },
   { id: 'risk', icon: Radar, title: 'Risk & reconciliation', text: 'Explainable risk scores, orphan and rogue account detection.', tag: 'NIST AC-2(3)' },
-  { id: 'lab', icon: FlaskConical, title: 'Controls lab', text: '14 live, testable controls mapped to NIST 800-53, SOX and HIPAA.', tag: 'Audit-ready' },
+  { id: 'sso', icon: Fingerprint, title: 'SSO & Keycloak', text: 'Built-in OpenID Connect provider with PKCE, plus Keycloak at keycloak.assafwahinc.com.', tag: 'OIDC · SAML' },
+  { id: 'mfa', icon: Smartphone, title: 'MFA & Conditional Access', text: 'Entra-style policies, What-If, TOTP enrolment, legacy-auth block.', tag: 'NIST IA-2(1)' },
+  { id: 'vault', icon: Vault, title: 'Credential vault', text: 'AES-256-GCM vault, step-up MFA checkout, rotate on check-in.', tag: 'PAM' },
+  { id: 'cloud', icon: Cloud, title: 'Cloud IAM', text: 'AWS policy simulator with boundaries, Azure RBAC with PIM.', tag: 'Least privilege' },
+  { id: 'monitoring', icon: Activity, title: 'Threat detection', text: 'Spray, brute force, impossible travel, MFA fatigue, with KQL.', tag: 'MITRE ATT&CK' },
+  { id: 'automation', icon: Terminal, title: 'Automation', text: 'HR feed to joiner/mover/leaver over SCIM, in Python and PowerShell.', tag: 'Python' },
+  { id: 'lab', icon: FlaskConical, title: 'Controls lab', text: '20 live, testable controls mapped to NIST 800-53, SOX, HIPAA and CIS.', tag: 'Audit-ready' },
 ]
 
 export default function Overview() {
@@ -42,11 +48,12 @@ export default function Overview() {
               Identity governance, <span className="bg-gradient-to-r from-violet-300 via-indigo-300 to-sky-300 bg-clip-text text-transparent">built and audited</span>
             </h1>
             <p className="mt-4 max-w-2xl text-sm leading-relaxed text-zinc-300 sm:text-base">
-              A working IAM platform covering identity lifecycle, SCIM provisioning, access reviews, just-in-time privileged access,
-              and risk-based reconciliation. Every control is a testable assertion mapped to NIST SP 800-53, SOX ITGC and HIPAA.
+              A working IAM platform covering identity lifecycle, SCIM provisioning, SSO with its own OpenID provider and Keycloak, MFA and Conditional Access,
+              access reviews, just-in-time access with a credential vault, cloud IAM policies and identity threat detection. Every control is a testable assertion mapped to NIST SP 800-53, SOX ITGC and HIPAA.
             </p>
             <div className="mt-6 flex flex-wrap gap-2">
-              <a href="#lab"><Button><FlaskConical className="size-4" /> Run the controls lab</Button></a>
+              <a href="#guide"><Button><BookOpen className="size-4" /> Project guide: all 10 projects</Button></a>
+              <a href="#lab"><Button variant="ghost"><FlaskConical className="size-4" /> Run the controls lab</Button></a>
               <a href="#scim"><Button variant="ghost"><Plug className="size-4" /> Try the SCIM API</Button></a>
               <Button variant="subtle" onClick={reset}><RotateCcw className="size-4" /> Reset demo</Button>
             </div>
