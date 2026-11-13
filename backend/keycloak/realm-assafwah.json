@@ -1,0 +1,256 @@
+{
+  "realm": "assafwah",
+  "displayName": "Assafwah Identity",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "rememberMe": false,
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "failureFactor": 5,
+  "waitIncrementSeconds": 60,
+  "maxFailureWaitSeconds": 900,
+  "maxDeltaTimeSeconds": 43200,
+  "quickLoginCheckMilliSeconds": 1000,
+  "minimumQuickLoginWaitSeconds": 60,
+  "passwordPolicy": "length(12) and upperCase(1) and lowerCase(1) and digits(1) and specialChars(1) and notUsername and passwordHistory(5)",
+  "otpPolicyType": "totp",
+  "otpPolicyAlgorithm": "HmacSHA1",
+  "otpPolicyDigits": 6,
+  "otpPolicyPeriod": 30,
+  "otpPolicyLookAheadWindow": 1,
+  "accessTokenLifespan": 900,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "revokeRefreshToken": true,
+  "refreshTokenMaxReuse": 0,
+  "eventsEnabled": true,
+  "eventsExpiration": 2592000,
+  "adminEventsEnabled": true,
+  "adminEventsDetailsEnabled": true,
+  "enabledEventTypes": [
+    "LOGIN",
+    "LOGIN_ERROR",
+    "LOGOUT",
+    "CODE_TO_TOKEN",
+    "CODE_TO_TOKEN_ERROR",
+    "UPDATE_TOTP",
+    "REMOVE_TOTP",
+    "UPDATE_PASSWORD",
+    "USER_DISABLED_BY_TEMPORARY_LOCKOUT"
+  ],
+  "roles": {
+    "realm": [
+      {
+        "name": "iam-admin",
+        "description": "Administers the IAM Projects console"
+      },
+      {
+        "name": "approver",
+        "description": "Approves access requests and reviews"
+      }
+    ]
+  },
+  "groups": [
+    {
+      "name": "iam-admins",
+      "realmRoles": [
+        "iam-admin",
+        "approver"
+      ]
+    },
+    {
+      "name": "approvers",
+      "realmRoles": [
+        "approver"
+      ]
+    },
+    {
+      "name": "engineering",
+      "realmRoles": []
+    },
+    {
+      "name": "service-desk",
+      "realmRoles": []
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "iam-projects",
+      "name": "IAM Projects console",
+      "description": "Identity governance lab. Uses auth code + PKCE.",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "frontchannelLogout": true,
+      "redirectUris": [
+        "https://iam.assafwahinc.com/auth/callback",
+        "http://localhost:8080/auth/callback"
+      ],
+      "webOrigins": [
+        "https://iam.assafwahinc.com",
+        "http://localhost:8080"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "https://iam.assafwahinc.com/*##http://localhost:8080/*",
+        "access.token.lifespan": "900"
+      },
+      "defaultClientScopes": [
+        "web-origins",
+        "profile",
+        "roles",
+        "email",
+        "basic"
+      ],
+      "optionalClientScopes": [
+        "offline_access"
+      ],
+      "protocolMappers": [
+        {
+          "name": "groups",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "consentRequired": false,
+          "config": {
+            "full.path": "false",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "claim.name": "groups"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "saml-lab",
+      "name": "SAML lab app",
+      "description": "Practice SAML 2.0 federation: point any SAML service provider (e.g. a local SimpleSAMLphp or a SAML test SP) at this realm.",
+      "enabled": true,
+      "protocol": "saml",
+      "frontchannelLogout": true,
+      "redirectUris": [
+        "http://localhost:8080/*"
+      ],
+      "baseUrl": "http://localhost:8080",
+      "attributes": {
+        "saml.signature.algorithm": "RSA_SHA256",
+        "saml.server.signature": "true",
+        "saml.assertion.signature": "true",
+        "saml_force_name_id_format": "true",
+        "saml_name_id_format": "email",
+        "saml.authnstatement": "true",
+        "saml.client.signature": "false",
+        "saml_assertion_consumer_url_post": "http://localhost:8080/saml/acs"
+      },
+      "protocolMappers": [
+        {
+          "name": "email",
+          "protocol": "saml",
+          "protocolMapper": "saml-user-property-mapper",
+          "config": {
+            "user.attribute": "email",
+            "attribute.name": "email",
+            "attribute.nameformat": "Basic",
+            "friendly.name": "email"
+          }
+        },
+        {
+          "name": "groups",
+          "protocol": "saml",
+          "protocolMapper": "saml-group-membership-mapper",
+          "config": {
+            "attribute.name": "groups",
+            "attribute.nameformat": "Basic",
+            "full.path": "false",
+            "single": "true"
+          }
+        },
+        {
+          "name": "roles",
+          "protocol": "saml",
+          "protocolMapper": "saml-role-list-mapper",
+          "config": {
+            "attribute.name": "Role",
+            "attribute.nameformat": "Basic",
+            "single": "false"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "yusuf.ali",
+      "email": "yusuf.ali@demo.local",
+      "firstName": "Yusuf",
+      "lastName": "Ali",
+      "enabled": true,
+      "emailVerified": true,
+      "groups": [
+        "iam-admins"
+      ],
+      "requiredActions": [
+        "CONFIGURE_TOTP"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo!2026-Keycloak",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "omar.farouk",
+      "email": "omar.farouk@demo.local",
+      "firstName": "Omar",
+      "lastName": "Farouk",
+      "enabled": true,
+      "emailVerified": true,
+      "groups": [
+        "engineering",
+        "approvers"
+      ],
+      "requiredActions": [
+        "CONFIGURE_TOTP"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo!2026-Keycloak",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "sofia.alvarez",
+      "email": "sofia.alvarez@demo.local",
+      "firstName": "Sofia",
+      "lastName": "Alvarez",
+      "enabled": true,
+      "emailVerified": true,
+      "groups": [
+        "service-desk"
+      ],
+      "requiredActions": [
+        "CONFIGURE_TOTP"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo!2026-Keycloak",
+          "temporary": false
+        }
+      ]
+    }
+  ]
+}
