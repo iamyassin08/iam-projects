@@ -117,7 +117,7 @@ flowchart LR
 ## Try it in 2 minutes
 
 1. Open the [**Controls lab**](https://iam.assafwahinc.com/#lab): 8 of 20 controls pass.
-1. [**Single sign-on**](https://iam.assafwahinc.com/#sso) → *Sign in with Assafwah IdP* as `yusuf.ali` / `Demo!2026`, finish MFA with the demo authenticator, then read your own ID token.
+1. [**Single sign-on**](https://iam.assafwahinc.com/#sso) → *Sign in with Assafwah IdP* as `yusuf.ali` / `test123`, finish MFA with the demo authenticator, then read your own ID token.
 2. **Risk & reconciliation → Reconciliation**: disable `mlee.clinical` (rogue Epic access that breaks sod-4). C11 improves and Marcus Lee's risk drops from 60.
 3. **Just-in-time access**: review Yusuf's break-glass session (C9 passes), then activate his ServiceNow admin for 5 minutes and watch it expire.
 4. **SCIM 2.0**: generate a token, *Create user*, then *Deactivate, Entra style*. Check the audit log for `scim:` entries.
