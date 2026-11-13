@@ -16,7 +16,7 @@
   "maxDeltaTimeSeconds": 43200,
   "quickLoginCheckMilliSeconds": 1000,
   "minimumQuickLoginWaitSeconds": 60,
-  "passwordPolicy": "length(12) and upperCase(1) and lowerCase(1) and digits(1) and specialChars(1) and notUsername and passwordHistory(5)",
+  "passwordPolicy": "length(6) and notUsername",
   "otpPolicyType": "totp",
   "otpPolicyAlgorithm": "HmacSHA1",
   "otpPolicyDigits": 6,
@@ -204,7 +204,7 @@
       "credentials": [
         {
           "type": "password",
-          "value": "Demo!2026-Keycloak",
+          "value": "test123",
           "temporary": false
         }
       ]
@@ -226,7 +226,7 @@
       "credentials": [
         {
           "type": "password",
-          "value": "Demo!2026-Keycloak",
+          "value": "test123",
           "temporary": false
         }
       ]
@@ -247,7 +247,7 @@
       "credentials": [
         {
           "type": "password",
-          "value": "Demo!2026-Keycloak",
+          "value": "test123",
           "temporary": false
         }
       ]
