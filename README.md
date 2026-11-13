@@ -4,7 +4,7 @@
 
 A working Identity & Access Management platform that does the real jobs of an IAM analyst and engineer: identity lifecycle with **SCIM 2.0**, **RBAC with segregation of duties**, **SSO through its own OpenID Connect provider and Keycloak**, **MFA and Conditional Access**, **just-in-time access with a credential vault**, **access certifications**, **AWS and Azure least-privilege policies**, **identity threat detection** and **Python/PowerShell automation**. Every control is a testable assertion over live state, mapped to **NIST SP 800-53 r5, SOX ITGC, HIPAA and CIS**.
 
-**New here? Open the [Project guide](https://iam.assafwahinc.com/#guide).** It maps the 10 standard IAM analyst projects to the live modules, with screenshots, how each was built, the same steps on Entra ID / Okta / AWS, STAR interview stories and resume bullets.
+**New here? Open the [Project guide](https://iam.assafwahinc.com/#guide)** or the [**Help & lab guides**](https://iam.assafwahinc.com/#help) (every lab step mapped to where it's done in the app, plus copy-paste AI mentor prompts for doing each lab on Entra ID, Okta, AWS or Keycloak). The Project guide maps the 10 standard IAM analyst projects to the live modules, with screenshots, how each was built, the same steps on Entra ID / Okta / AWS, STAR interview stories and resume bullets.
 
 ![Security posture overview](docs/screenshots/overview.jpg)
 
