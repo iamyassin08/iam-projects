@@ -288,13 +288,13 @@ export default function App() {
   const hash = useHash()
   const [collapsed, toggleCollapsed] = useCollapsed()
   const current = ALL.find((n) => n.id === hash) || ALL[0]
-  const Page = current.page
+  const Page = hash === 'login' ? Login : current.page
+  const title = hash === 'login' ? 'Sign in' : current.label
   usePreline([hash])
 
   useEffect(() => { document.title = hash === 'login' ? 'Sign in · IAM Projects' : hash === 'signin' ? 'Sign in · Assafwah IdP' : `${current.label} · IAM Projects` }, [current, hash])
 
   if (hash === 'signin') return <><SignIn /><Toaster /></>
-  if (hash === 'login') return <><Login /><Toaster /></>
 
   return (
     <div className="relative min-h-screen">
@@ -312,7 +312,7 @@ export default function App() {
       </aside>
 
       <main className={`transition-[padding] duration-300 ${collapsed ? 'lg:ps-16' : 'lg:ps-64'}`}>
-        <TopBar title={current.label} collapsed={collapsed} onToggle={toggleCollapsed} />
+        <TopBar title={title} collapsed={collapsed} onToggle={toggleCollapsed} />
         <div key={hash} className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <Page />
         </div>
