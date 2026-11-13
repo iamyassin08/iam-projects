@@ -15,7 +15,7 @@ How projects 3, 4, 5, 7, 8 and 10 are built. All server code is Go standard libr
 
 The console is the relying party (`backend/sso.go`): `/auth/login` → state, nonce and PKCE verifier in an HMAC-signed HttpOnly cookie; `/auth/callback` checks state, redeems the code, verifies signature, `iss`, `aud`, `exp` and `nonce`, then issues an 8-hour session cookie. With `OIDC_ISSUER` set, the same code uses Keycloak's discovery and JWKS. A signed-in user is the `actor` on every audit entry. Revoking sessions (alert response, leaver, disabled user) invalidates cookies issued before that moment.
 
-Demo users share the password `Demo!2026`. TOTP secrets are deterministic for the demo so the in-app virtual authenticator works after a reset; real deployments use `newTOTPSecret()`.
+Demo users share the password `test123`. TOTP secrets are deterministic for the demo so the in-app virtual authenticator works after a reset; real deployments use `newTOTPSecret()`.
 
 ## Conditional Access (`backend/conditional.go`)
 

@@ -10,11 +10,11 @@
 | Groups mapper | `groups` claim in ID + access tokens | The console reads it, plus `realm_access.roles` |
 | MFA | `CONFIGURE_TOTP` required action on every demo user | Enrol an authenticator at first sign-in |
 | Brute force | 5 failures, wait up to 15 min | Same smart-lockout idea as the built-in IdP |
-| Password policy | 12+ chars, upper, lower, digit, special, not username, history 5 | NIST 800-63B-aligned length |
+| Password policy | 6+ chars, not the username | Relaxed so the public demo can share `test123`. For real users use 12+ chars, not username, history 5 (NIST 800-63B favours length) |
 | Tokens | access 15 min, SSO idle 30 min, refresh tokens rotated | Short-lived credentials |
 | Events | login + admin events kept 30 days | Evidence for monitoring |
 
-Demo users: `yusuf.ali` (iam-admins), `omar.farouk` (engineering, approvers), `sofia.alvarez` (service-desk). Password `Demo!2026-Keycloak`.
+Demo users: `yusuf.ali` (iam-admins), `omar.farouk` (engineering, approvers), `sofia.alvarez` (service-desk). Password `test123`.
 
 ## Set it up on keycloak.assafwahinc.com (5 minutes)
 
@@ -32,7 +32,7 @@ Demo users: `yusuf.ali` (iam-admins), `omar.farouk` (engineering, approvers), `s
    | `SESSION_SECRET` | `openssl rand -base64 32` |
 
    Redeploy. **Single sign-on → Sign in with Keycloak** is now enabled.
-5. **Test:** sign in as `yusuf.ali` / `Demo!2026-Keycloak`, enrol TOTP, land back on the console signed in, and inspect the Keycloak ID token. Then fail five passwords for `omar.farouk` and check Realm → Events → User events for `LOGIN_ERROR` and the temporary lockout.
+5. **Test:** sign in as `yusuf.ali` / `test123`, enrol TOTP, land back on the console signed in, and inspect the Keycloak ID token. Then fail five passwords for `omar.farouk` and check Realm → Events → User events for `LOGIN_ERROR` and the temporary lockout.
 
 Check it from a terminal: `curl https://keycloak.assafwahinc.com/realms/assafwah/.well-known/openid-configuration` must return JSON whose `issuer` is exactly `https://keycloak.assafwahinc.com/realms/assafwah`. If it shows `http://` or an internal host, set `KC_HOSTNAME=https://keycloak.assafwahinc.com` and `KC_PROXY_HEADERS=xforwarded` on the Keycloak service.
 
