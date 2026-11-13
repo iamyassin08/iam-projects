@@ -164,7 +164,8 @@ func OpenStore(path string) (*Store, error) {
 		return nil, err
 	}
 	st.s = &s
-	if migrate(st.s) {
+	m1, m2 := migrate(st.s), syncDemoPasswords(st.s)
+	if m1 || m2 {
 		return st, st.save()
 	}
 	return st, nil

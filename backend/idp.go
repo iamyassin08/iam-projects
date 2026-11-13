@@ -40,7 +40,7 @@ type IdPUser struct {
 }
 
 // DemoPassword is printed on the hosted sign-in page. Every demo user shares it.
-const DemoPassword = "Demo!2026"
+const DemoPassword = "test123"
 
 func hashPassword(pw, salt string) string {
 	k, _ := pbkdf2.Key(sha256.New, pw, []byte(salt), 120000, 32)

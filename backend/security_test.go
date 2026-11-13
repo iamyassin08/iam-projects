@@ -299,3 +299,17 @@ func TestAccessCheck(t *testing.T) {
 		t.Fatalf("Yusuf should be JIT-eligible, not standing: %v", out)
 	}
 }
+
+func TestDemoPasswordSync(t *testing.T) {
+	newClient(t)
+	_ = store.Update(func(s *State) error {
+		s.IdPUsers[0].PasswordHash = hashPassword("old-password", "salt-x")
+		if !syncDemoPasswords(s) || !checkPassword(s.IdPUsers[0].PasswordHash, DemoPassword) {
+			t.Fatal("demo password should be re-synced")
+		}
+		if syncDemoPasswords(s) {
+			t.Fatal("second sync should be a no-op")
+		}
+		return nil
+	})
+}

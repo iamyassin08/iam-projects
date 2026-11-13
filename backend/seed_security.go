@@ -195,3 +195,17 @@ func migrate(s *State) bool {
 	s.audit("system", "migrate", "tenant", "Added identity security modules: IdP, MFA, Conditional Access, sign-in log, vault, cloud IAM")
 	return true
 }
+
+// syncDemoPasswords keeps every demo IdP account on the current published
+// demo password, so changing DemoPassword takes effect on an existing volume.
+func syncDemoPasswords(s *State) bool {
+	changed := false
+	for i := range s.IdPUsers {
+		u := &s.IdPUsers[i]
+		if !checkPassword(u.PasswordHash, DemoPassword) {
+			u.PasswordHash = hashPassword(DemoPassword, "salt-"+u.Username)
+			changed = true
+		}
+	}
+	return changed
+}

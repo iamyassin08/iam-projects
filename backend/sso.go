@@ -192,7 +192,7 @@ func ssoLogin(w http.ResponseWriter, r *http.Request) {
 
 func ssoCallback(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
-	back := func(msg string) { http.Redirect(w, r, "/#sso?error="+url.QueryEscape(msg), http.StatusFound) }
+	back := func(msg string) { http.Redirect(w, r, "/#login?error="+url.QueryEscape(msg), http.StatusFound) }
 	if e := q.Get("error"); e != "" {
 		back(e + ": " + q.Get("error_description"))
 		return
