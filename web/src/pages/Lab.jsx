@@ -102,7 +102,7 @@ export default function Lab() {
   return (
     <div className="space-y-6">
       <PageHeader icon={FlaskConical} eyebrow="Controls as code · continuous assurance" title="Controls lab"
-        desc="Fourteen controls run as read-only assertions over live state (server/lab.go) after every change, each mapped to NIST SP 800-53 r5, SOX ITGC, HIPAA or CIS. The seed tenant ships with deliberate findings; each module below walks through Problem → Assumptions → Build → Test → Improve to fix them.">
+        desc="Twenty controls run as read-only assertions over live state (server/lab.go) after every change, each mapped to NIST SP 800-53 r5, SOX ITGC, HIPAA or CIS. The seed tenant ships with deliberate findings; each module below walks through Problem → Assumptions → Build → Test → Improve to fix them.">
         <Button variant="ghost" onClick={async () => { await reload(); toast('Controls re-evaluated', 'info') }}><RefreshCw className="size-4" /> Re-run</Button>
         <Button onClick={() => downloadFile('iam-lab-writeup.md', writeUp(data.checks), 'text/markdown')}><Download className="size-4" /> Download write-up</Button>
       </PageHeader>

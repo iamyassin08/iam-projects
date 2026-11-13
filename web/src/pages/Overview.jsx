@@ -27,7 +27,7 @@ export default function Overview() {
   usePreline([data])
 
   async function reset() {
-    const ok = await ask({ title: 'Reset demo tenant?', message: 'This restores the seed data, including the six deliberate audit findings. Anything changed since will be lost.', input: false, confirm: 'Reset', tone: 'danger' })
+    const ok = await ask({ title: 'Reset demo tenant?', message: 'This restores the seed data, including the twelve deliberate audit findings. Anything changed since will be lost.', input: false, confirm: 'Reset', tone: 'danger' })
     if (!ok) return
     try { await api.reset(); await reload(); toast('Demo tenant reset to seed data') } catch (e) { toast(e.message, 'err') }
   }

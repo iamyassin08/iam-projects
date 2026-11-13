@@ -50,7 +50,7 @@ export default function Cloud() {
   const [tab, setTab] = useState('policies')
   const [pid, setPid] = useState('pol-legacy')
   const [doc, setDoc] = useState('')
-  const [sim, setSim] = useState({ ...SCENARIOS[0], context: { mfa: true, sourceIp: '73.120.44.18', region: 'us-east-1' } })
+  const [sim, setSim] = useState({ ...SCENARIOS[0], context: { mfa: true, sourceIp: '198.51.100.18', region: 'us-east-1' } })
   const [res, setRes] = useState(null)
   usePreline([data, tab])
 
@@ -139,7 +139,7 @@ export default function Cloud() {
               <Field label="Resource ARN"><input className="input font-mono text-xs" value={sim.resource} onChange={(e) => setSim({ ...sim, resource: e.target.value })} /></Field>
               <div className="grid grid-cols-3 gap-2">
                 <Field label="MFA"><Seg value={String(sim.context.mfa)} onChange={(v) => setSim({ ...sim, context: { ...sim.context, mfa: v === 'true' } })} options={[{ value: 'true', label: 'Yes' }, { value: 'false', label: 'No' }]} /></Field>
-                <Field label="Source IP"><select className="input text-xs" value={sim.context.sourceIp} onChange={(e) => setSim({ ...sim, context: { ...sim.context, sourceIp: e.target.value } })}><option value="73.120.44.18">Office 73.120.44.18</option><option value="102.89.34.77">Lagos 102.89.34.77</option></select></Field>
+                <Field label="Source IP"><select className="input text-xs" value={sim.context.sourceIp} onChange={(e) => setSim({ ...sim, context: { ...sim.context, sourceIp: e.target.value } })}><option value="198.51.100.18">Office 198.51.100.18</option><option value="192.0.2.77">Lagos 192.0.2.77</option></select></Field>
                 <Field label="Region"><select className="input text-xs" value={sim.context.region} onChange={(e) => setSim({ ...sim, context: { ...sim.context, region: e.target.value } })}><option>us-east-1</option><option>eu-west-1</option></select></Field>
               </div>
               <Button className="w-full" onClick={() => run()}><Play className="size-4" /> Evaluate</Button>
