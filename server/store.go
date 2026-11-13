@@ -340,6 +340,12 @@ func (s *State) clearExclusions(identityID string) {
 }
 
 func (s *State) audit(actor, action, target, detail string) {
+	if len(detail) > 600 {
+		detail = detail[:600] + "…"
+	}
+	if len(actor) > 80 {
+		actor = actor[:80]
+	}
 	s.Audit = append([]AuditEntry{{s.nextID("AUD"), now(), actor, action, target, detail}}, s.Audit...)
 	if len(s.Audit) > 1000 {
 		s.Audit = s.Audit[:1000]

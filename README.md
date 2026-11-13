@@ -152,6 +152,15 @@ cd web && npm install && npm run dev      # UI on :5173, proxies /api, /scim, /i
 | `SESSION_SECRET` | random per boot | HMAC key for session cookies (set it so sign-ins survive redeploys) |
 | `VAULT_KEY` | `vault.key` beside the data file | Base64 32-byte AES key for the credential vault |
 | `OIDC_ISSUER` · `OIDC_CLIENT_ID` · `OIDC_CLIENT_SECRET` | unset | Turn on *Sign in with Keycloak* ([`docs/KEYCLOAK.md`](docs/KEYCLOAK.md)) |
+| `DEMO_RESET_HOURS` | `0` (off) | Reseed the public demo every N hours so changes by visitors don't pile up |
+
+### Running it as a public demo
+
+The demo is deliberately open (anyone can approve, revoke or reset), so the server protects itself instead:
+per-IP rate limits on writes and sign-in attempts (429 + `Retry-After`), caps on identities, requests, campaigns and SCIM tokens,
+64 KB request bodies, a strict Content-Security-Policy plus `X-Frame-Options`, `nosniff`, HSTS and `no-store` on API responses,
+and HTTP timeouts. No secrets live in the repo: keys and client secrets come from environment variables or files on the data
+volume, and every person, company and IP address in the seed data is fictional (IPs are RFC 5737 documentation ranges).
 
 ## API
 

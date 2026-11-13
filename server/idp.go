@@ -84,15 +84,16 @@ type Location struct {
 	Anonymizer  bool    `json:"anonymizer"`
 }
 
+// IPs are from the RFC 5737 documentation ranges, so no real address appears in the demo.
 var Locations = []Location{
-	{"nashville", "Nashville", "US", "United States", "73.120.44.18", 36.16, -86.78, false},
-	{"clarksville", "Clarksville", "US", "United States", "98.17.12.201", 36.53, -87.36, false},
-	{"chicago", "Chicago", "US", "United States", "24.13.88.40", 41.88, -87.63, false},
-	{"london", "London", "GB", "United Kingdom", "81.2.69.142", 51.51, -0.13, false},
-	{"amsterdam", "Amsterdam", "NL", "Netherlands", "45.83.64.12", 52.37, 4.90, false},
-	{"lagos", "Lagos", "NG", "Nigeria", "102.89.34.77", 6.52, 3.38, false},
-	{"frankfurt-tor", "Frankfurt (Tor exit)", "DE", "Germany", "185.220.101.47", 50.11, 8.68, true},
-	{"moscow", "Moscow", "RU", "Russia", "95.165.12.9", 55.75, 37.62, false},
+	{"nashville", "Nashville", "US", "United States", "198.51.100.18", 36.16, -86.78, false},
+	{"clarksville", "Clarksville", "US", "United States", "198.51.100.201", 36.53, -87.36, false},
+	{"chicago", "Chicago", "US", "United States", "198.51.100.40", 41.88, -87.63, false},
+	{"london", "London", "GB", "United Kingdom", "203.0.113.142", 51.51, -0.13, false},
+	{"amsterdam", "Amsterdam", "NL", "Netherlands", "203.0.113.12", 52.37, 4.90, false},
+	{"lagos", "Lagos", "NG", "Nigeria", "192.0.2.77", 6.52, 3.38, false},
+	{"frankfurt-tor", "Frankfurt (Tor exit)", "DE", "Germany", "192.0.2.47", 50.11, 8.68, true},
+	{"moscow", "Moscow", "RU", "Russia", "192.0.2.9", 55.75, 37.62, false},
 }
 
 func locByKey(k string) Location {

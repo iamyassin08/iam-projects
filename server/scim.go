@@ -78,8 +78,14 @@ func postToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	plain := "scim_" + hex.EncodeToString(buf)
+	if len(in.Name) > 80 {
+		in.Name = in.Name[:80]
+	}
 	var tok SCIMToken
 	err := store.Update(func(s *State) error {
+		if err := s.atCapacity("token"); err != nil {
+			return err
+		}
 		tok = SCIMToken{ID: s.nextID("TOK"), Name: in.Name, Prefix: plain[:12], HashStore: hashToken(plain), CreatedBy: actor(r), CreatedAt: now()}
 		s.SCIMTokens = append(s.SCIMTokens, tok)
 		s.audit(actor(r), "scim.token.created", tok.ID, fmt.Sprintf("%s (%s…)", tok.Name, tok.Prefix))
@@ -535,7 +541,7 @@ func (s *State) managerName(m struct {
 
 func scimCreateUser(w http.ResponseWriter, r *http.Request, actor string) {
 	var in scimUserIn
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20)).Decode(&in); err != nil {
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 64<<10)).Decode(&in); err != nil {
 		scimErr(w, 400, "invalidSyntax", "request body is not valid JSON")
 		return
 	}
@@ -594,7 +600,7 @@ func (s *State) applyActive(actor string, id *Identity, active bool) error {
 
 func scimPutUser(w http.ResponseWriter, r *http.Request, actor string) {
 	var in scimUserIn
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20)).Decode(&in); err != nil {
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 64<<10)).Decode(&in); err != nil {
 		scimErr(w, 400, "invalidSyntax", "request body is not valid JSON")
 		return
 	}
@@ -688,7 +694,7 @@ func (s *State) patchUserAttr(actor string, id *Identity, path string, val json.
 
 func scimPatchUser(w http.ResponseWriter, r *http.Request, actor string) {
 	var in patchReq
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20)).Decode(&in); err != nil || len(in.Operations) == 0 {
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 64<<10)).Decode(&in); err != nil || len(in.Operations) == 0 {
 		scimErr(w, 400, "invalidSyntax", "expected a PatchOp with Operations")
 		return
 	}
@@ -821,7 +827,7 @@ var memberPathRe = regexp.MustCompile(`(?i)^members\[value eq "([^"]+)"\]$`)
 
 func scimPatchGroup(w http.ResponseWriter, r *http.Request, actor string) {
 	var in patchReq
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20)).Decode(&in); err != nil || len(in.Operations) == 0 {
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 64<<10)).Decode(&in); err != nil || len(in.Operations) == 0 {
 		scimErr(w, 400, "invalidSyntax", "expected a PatchOp with Operations")
 		return
 	}

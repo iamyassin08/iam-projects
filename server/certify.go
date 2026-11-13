@@ -99,6 +99,9 @@ func (s *State) sodFor(identityID, entID string) string {
 }
 
 func (s *State) launchCampaign(actor, name, scope, systemID string, dueDays int, autoRevoke bool) (*Campaign, error) {
+	if err := s.atCapacity("campaign"); err != nil {
+		return nil, err
+	}
 	if strings.TrimSpace(name) == "" {
 		return nil, httpErr{400, "campaign name is required"}
 	}
