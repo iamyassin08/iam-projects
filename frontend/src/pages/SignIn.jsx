@@ -30,7 +30,7 @@ export default function SignIn() {
 
   useEffect(() => {
     if (!txn) { setErr('No sign-in in progress. Start from the application.'); return }
-    api.txn(txn).then(setInfo).catch((e) => setErr(e.message))
+    api.txn(txn).then((i) => { setInfo(i); if (i.loginHint) setForm((f) => ({ ...f, username: i.loginHint })) }).catch((e) => setErr(e.message))
     api.idpUsers().then((d) => setSecrets(Object.fromEntries(d.users.filter((u) => u.demoTotpSecret).map((u) => [u.username, u.demoTotpSecret])))).catch(() => {})
   }, [txn])
 
