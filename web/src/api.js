@@ -18,6 +18,7 @@ export const api = {
   catalog: () => call('GET', '/catalog'),
   identities: () => call('GET', '/identities'),
   access: (id) => call('GET', `/identities/${id}/access`),
+  accessCheck: (identityId, entitlementId) => call('GET', `/access-check?identityId=${encodeURIComponent(identityId)}&entitlementId=${encodeURIComponent(entitlementId)}`),
   jmlEvents: () => call('GET', '/jml/events'),
   joiner: (b) => call('POST', '/jml/joiner', b),
   mover: (b) => call('POST', '/jml/mover', b),
