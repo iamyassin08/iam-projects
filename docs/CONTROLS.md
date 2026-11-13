@@ -20,10 +20,16 @@ Mappings use NIST SP 800-53 Rev. 5 control identifiers, SOX IT general control (
 | C12 | Standing privileged access is used within 90 days | Unused admin rights are risk without benefit. | **AC-2(3)** disable inactive accounts; **AC-6(7)** review of user privileges. |
 | C13 | Access reviews finish by their due date | An overdue review is a missed control for the period. | **AC-2(j)** periodic account review; **SOX** user access review; **HIPAA 164.308(a)(4)(ii)(C)** access establishment and modification. |
 | C14 | Provisioning tokens are rotated within 90 days | A long-lived bearer token is a standing credential to create and delete users. | **IA-5(1)** authenticator management; **SC-12** key management. |
+| C15 | MFA is enforced and registered for every user | Passwords alone are sprayed and phished daily. | **IA-2(1)/(2)** MFA for privileged and non-privileged accounts; **HIPAA 164.312(d)** person or entity authentication; **CIS 6.3, 6.5**. |
+| C16 | Legacy authentication protocols are blocked | Basic auth can't do MFA, so it bypasses the MFA policy. | **IA-2**; **AC-17** remote access; **CIS 4.8** uninstall or disable unnecessary services. |
+| C17 | Vaulted admin passwords are rotated on schedule and after use | A shared admin password that never changes is a standing backdoor. | **IA-5(1)**; **AC-2(4)**; **CIS 5.2** unique passwords; **SOX** privileged access. |
+| C18 | No cloud identity has `Action:*` on `Resource:*` | Wildcard admin turns one leaked key into a full breach. | **AC-6** least privilege; **AC-6(10)** prohibit non-privileged users from executing privileged functions; **CIS 6.8** role-based access. |
+| C19 | Sensitive cloud permissions require MFA or PIM | Standing cloud admin with no step-up is the shortest path to tenant owner. | **AC-6(5)**; **IA-2(1)**; **CIS 6.5** MFA for administrative access. |
+| C20 | High-severity identity alerts are triaged | Detection without response is just logging. | **IR-4** incident handling; **SI-4** system monitoring; **AU-6**; **HIPAA 164.308(a)(6)(ii)** response and reporting. |
 
 ## Seeded findings
 
-The demo tenant starts at **8 / 14**. Each failing control has a remediation path in the UI:
+The demo tenant starts at **8 / 20**. Each failing control has a remediation path in the UI:
 
 | Control | Seeded cause | Fix in the app |
 |---|---|---|
@@ -33,3 +39,9 @@ The demo tenant starts at **8 / 14**. Each failing control has a remediation pat
 | C10 | `j.ortega` in NetSuite (never in HR) and `svc-legacy-deploy` in AWS (no owner) | Reconciliation → *Disable* / *Owner* |
 | C11 | `dbrooks-sales` is a GitHub Org Owner and `mlee.clinical` holds Epic clinical access, both created outside IAM | Reconciliation → *Disable* (adopting `mlee.clinical` is refused: it would legitimise sod-4) |
 | C12 | Sofia Alvarez's Domain Admin is unused for 210 days | Dormant access → *Revoke*, or revoke it in the Q4 access review |
+| C15 | CA002 "MFA for all users" left in report-only; Sofia has no MFA method | MFA & Conditional Access → set CA002 to On; sign in as `sofia.alvarez` and enrol |
+| C16 | CA003 "Block legacy authentication" is off | MFA & Conditional Access → set CA003 to On |
+| C17 | AWS prod break-glass credential last rotated 124 days ago | Credential vault → *Rotate* |
+| C18 | `LegacyDeployFullAccess` grants `*` on `*` to `svc-legacy-deploy` | Cloud IAM → *Load least-privilege fix* → *Save* |
+| C19 | `IAMOperations` lacks an MFA condition and allows `iam:PassRole` on `*`; Omar is permanent Owner of the prod subscription | Cloud IAM → fix the policy; Azure RBAC → *Make PIM-eligible* |
+| C20 | Seeded attacks raise high / critical alerts nobody has triaged | Identity threat detection → *Triage alert* on each |

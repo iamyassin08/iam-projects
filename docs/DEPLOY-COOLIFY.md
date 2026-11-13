@@ -23,6 +23,10 @@ serving both the API and the UI.
    | `PORT` | `8080` |
    | `DATA_PATH` | `/data/iam.json` |
    | `STATIC_DIR` | `/app/web` |
+   | `PUBLIC_URL` | `https://iam.assafwahinc.com` (recommended: pins the OIDC issuer) |
+   | `SESSION_SECRET` | `openssl rand -base64 32` (recommended: sign-ins survive redeploys) |
+   | `VAULT_KEY` | `openssl rand -base64 32` (optional; otherwise a key file is created in `/data`) |
+   | `OIDC_ISSUER` / `OIDC_CLIENT_ID` / `OIDC_CLIENT_SECRET` | optional, Keycloak (see `docs/KEYCLOAK.md`) |
 
 8. **Health check:** path `/api/health`, port `8080`. The image also has a Docker `HEALTHCHECK`.
 9. Click **Deploy**. The first build takes 1–2 minutes.
@@ -31,7 +35,7 @@ serving both the API and the UI.
 
 ```bash
 curl https://iam.assafwahinc.com/api/health      # {"status":"ok"}
-curl https://iam.assafwahinc.com/api/lab/checks  # 14 control results
+curl https://iam.assafwahinc.com/api/lab/checks  # 20 control results
 ```
 
 Open the site and you should see the home screen with the four project cards.
