@@ -21,6 +21,10 @@ func main() {
 	port := env("PORT", "8080")
 
 	var err error
+	loadVaultKey(dbPath)
+	if idpKey, err = loadOrCreateKey(filepath.Join(filepath.Dir(dbPath), "idp-signing.pem")); err != nil {
+		log.Fatalf("idp key: %v", err)
+	}
 	store, err = OpenStore(dbPath)
 	if err != nil {
 		log.Fatalf("open store: %v", err)
@@ -82,6 +86,16 @@ func routes(staticDir string) *http.ServeMux {
 	mux.HandleFunc("DELETE /api/scim/tokens/{id}", deleteToken)
 	registerSCIM(mux)
 
+	// Identity security: OIDC provider + relying party, MFA, Conditional Access,
+	// sign-in monitoring, credential vault, cloud IAM, HR-feed automation
+	registerIdP(mux)
+	registerSSO(mux)
+	registerCA(mux)
+	registerMonitoring(mux)
+	registerVault(mux)
+	registerCloud(mux)
+	registerFeed(mux)
+
 	mux.Handle("/", spa(staticDir))
 	return mux
 }
@@ -110,6 +124,9 @@ func decode(r *http.Request, v any) error {
 }
 
 func actor(r *http.Request) string {
+	if s := currentSession(r); s != nil {
+		return s.Username
+	}
 	if a := strings.TrimSpace(r.Header.Get("X-Actor")); a != "" {
 		return a
 	}

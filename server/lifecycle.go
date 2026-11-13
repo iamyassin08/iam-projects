@@ -175,6 +175,15 @@ func (s *State) terminateIdentity(actor, identityID, endDate string) (JMLEvent, 
 		})
 	}
 	id.Status = "terminated"
+	id.Updated = now()
+	// The IdP account is disabled in the same event and live sessions are killed.
+	for i := range s.IdPUsers {
+		if u := &s.IdPUsers[i]; u.IdentityID == id.ID && !u.Disabled {
+			u.Disabled = true
+			revokeSessions(u.Username)
+			s.audit(actor, "idp.user.disabled", u.Username, "Leaver: sign-in blocked and sessions revoked"+via(actor))
+		}
+	}
 	id.EndDate = endDate
 	if id.EndDate == "" {
 		id.EndDate = now()[:10]

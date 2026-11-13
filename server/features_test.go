@@ -23,7 +23,13 @@ func newClient(t *testing.T) *client {
 	t.Helper()
 	clock = time.Now
 	var err error
-	store, err = OpenStore(filepath.Join(t.TempDir(), "iam.json"))
+	dir := t.TempDir()
+	if idpKey == nil {
+		if idpKey, err = loadOrCreateKey(filepath.Join(dir, "idp.pem")); err != nil {
+			t.Fatal(err)
+		}
+	}
+	store, err = OpenStore(filepath.Join(dir, "iam.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -63,10 +69,10 @@ func checkMap() map[string]CheckResult {
 func TestSeedFindings(t *testing.T) {
 	newClient(t)
 	m := checkMap()
-	if len(m) != 14 {
-		t.Fatalf("expected 14 controls, got %d", len(m))
+	if len(m) != 20 {
+		t.Fatalf("expected 20 controls, got %d", len(m))
 	}
-	for _, id := range []string{"C6", "C7", "C9", "C10", "C11", "C12"} {
+	for _, id := range []string{"C6", "C7", "C9", "C10", "C11", "C12", "C15", "C16", "C17", "C18", "C19", "C20"} {
 		if m[id].Pass {
 			t.Errorf("%s should start as a seeded finding", id)
 		}
