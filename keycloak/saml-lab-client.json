@@ -1,0 +1,56 @@
+{
+  "clientId": "saml-lab",
+  "name": "SAML lab app",
+  "description": "Practice SAML 2.0 federation: point any SAML service provider (e.g. a local SimpleSAMLphp or a SAML test SP) at this realm.",
+  "enabled": true,
+  "protocol": "saml",
+  "frontchannelLogout": true,
+  "redirectUris": [
+    "http://localhost:8080/*"
+  ],
+  "baseUrl": "http://localhost:8080",
+  "attributes": {
+    "saml.signature.algorithm": "RSA_SHA256",
+    "saml.server.signature": "true",
+    "saml.assertion.signature": "true",
+    "saml_force_name_id_format": "true",
+    "saml_name_id_format": "email",
+    "saml.authnstatement": "true",
+    "saml.client.signature": "false",
+    "saml_assertion_consumer_url_post": "http://localhost:8080/saml/acs"
+  },
+  "protocolMappers": [
+    {
+      "name": "email",
+      "protocol": "saml",
+      "protocolMapper": "saml-user-property-mapper",
+      "config": {
+        "user.attribute": "email",
+        "attribute.name": "email",
+        "attribute.nameformat": "Basic",
+        "friendly.name": "email"
+      }
+    },
+    {
+      "name": "groups",
+      "protocol": "saml",
+      "protocolMapper": "saml-group-membership-mapper",
+      "config": {
+        "attribute.name": "groups",
+        "attribute.nameformat": "Basic",
+        "full.path": "false",
+        "single": "true"
+      }
+    },
+    {
+      "name": "roles",
+      "protocol": "saml",
+      "protocolMapper": "saml-role-list-mapper",
+      "config": {
+        "attribute.name": "Role",
+        "attribute.nameformat": "Basic",
+        "single": "false"
+      }
+    }
+  ]
+}
