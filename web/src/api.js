@@ -2,8 +2,8 @@
 // audit log records who did it.
 export const ACTOR = 'yassin.iam'
 
-async function call(method, path, body) {
-  const res = await fetch(`/api${path}`, {
+async function call(method, path, body, prefix = '/api') {
+  const res = await fetch(`${prefix}${path}`, {
     method,
     headers: { 'Content-Type': 'application/json', 'X-Actor': ACTOR },
     body: body ? JSON.stringify(body) : undefined,
@@ -54,6 +54,39 @@ export const api = {
   tokens: () => call('GET', '/scim/tokens'),
   newToken: (name) => call('POST', '/scim/tokens', { name }),
   revokeToken: (id) => call('DELETE', `/scim/tokens/${id}`),
+  // SSO / IdP
+  me: () => call('GET', '/me'),
+  logout: () => call('POST', '/logout', undefined, '/auth'),
+  discovery: () => call('GET', '/.well-known/openid-configuration', undefined, '/idp'),
+  jwks: () => call('GET', '/jwks', undefined, '/idp'),
+  idpUsers: () => call('GET', '/idp/users'),
+  resetMFA: (u) => call('POST', `/idp/users/${u}/reset-mfa`),
+  setUserDisabled: (u, disabled) => call('POST', `/idp/users/${u}/${disabled ? 'disable' : 'enable'}`),
+  txn: (id) => call('GET', `/api/txn/${id}`, undefined, '/idp'),
+  txnPassword: (id, b) => call('POST', `/api/txn/${id}/password`, b, '/idp'),
+  txnMFA: (id, code) => call('POST', `/api/txn/${id}/mfa`, { code }, '/idp'),
+  txnEnroll: (id, code) => call('POST', `/api/txn/${id}/enroll`, { code }, '/idp'),
+  // Conditional Access
+  ca: () => call('GET', '/ca'),
+  setPolicy: (id, state) => call('PUT', `/ca/policies/${id}`, { state }),
+  whatIf: (b) => call('POST', '/ca/whatif', b),
+  unblockIP: (ip) => call('DELETE', `/ca/blocked-ips/${encodeURIComponent(ip)}`),
+  // monitoring
+  monitoring: () => call('GET', '/monitoring'),
+  triage: (id, b) => call('POST', `/monitoring/alerts/${encodeURIComponent(id)}`, b),
+  // vault
+  vault: () => call('GET', '/vault'),
+  checkout: (id, b) => call('POST', `/vault/${id}/checkout`, b),
+  checkin: (id) => call('POST', `/vault/${id}/checkin`),
+  rotate: (id) => call('POST', `/vault/${id}/rotate`),
+  // cloud IAM
+  cloud: () => call('GET', '/cloud'),
+  savePolicy: (id, document, reason) => call('PUT', `/cloud/policies/${id}`, { document, reason }),
+  simulate: (b) => call('POST', '/cloud/simulate', b),
+  makeEligible: (id) => call('POST', `/cloud/azure/${id}/make-eligible`),
+  // automation
+  hrFeed: (csv, apply) => call('POST', '/automation/hr-feed', { csv, apply }),
+  hrSample: () => fetch('/api/automation/hr-feed/sample').then((r) => r.text()),
 }
 
 export const fmtDate = (s) => (s ? new Date(s).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '—')
