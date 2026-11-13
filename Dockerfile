@@ -4,6 +4,9 @@ WORKDIR /web
 COPY web/package.json web/package-lock.json ./
 RUN npm ci
 COPY web/ ./
+# pages embed the automation scripts and the Keycloak realm (imported as ../scripts, ../keycloak)
+COPY scripts/ /scripts/
+COPY keycloak/ /keycloak/
 RUN npm run build
 
 # ---- 2. Build the Go API (stdlib only, static binary) ----

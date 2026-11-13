@@ -6,9 +6,29 @@ services:
     environment:
       - PORT=8080
       - DATA_PATH=/data/iam.json
+      # Optional: sign in through Keycloak as well as the built-in IdP
+      #   docker compose --profile keycloak up
+      - OIDC_ISSUER=${OIDC_ISSUER:-}
+      - OIDC_CLIENT_ID=${OIDC_CLIENT_ID:-iam-projects}
+      - OIDC_CLIENT_SECRET=${IAM_PROJECTS_CLIENT_SECRET:-}
+      - SESSION_SECRET=${SESSION_SECRET:-}
     volumes:
       - iam-data:/data
     restart: unless-stopped
+
+  # Open-source IdP (project 9). Imports the "assafwah" realm with clients for
+  # IAM Projects, MFA (TOTP), brute-force lockout and event logging. Production runs at keycloak.assafwahinc.com.
+  keycloak:
+    profiles: ["keycloak"]
+    image: quay.io/keycloak/keycloak:26.0
+    command: ["start-dev", "--import-realm"]
+    ports:
+      - "8081:8080"
+    environment:
+      - KC_BOOTSTRAP_ADMIN_USERNAME=admin
+      - KC_BOOTSTRAP_ADMIN_PASSWORD=${KC_BOOTSTRAP_ADMIN_PASSWORD:-change-me-now}
+    volumes:
+      - ./keycloak/realm-assafwah.json:/opt/keycloak/data/import/realm-assafwah.json:ro
 
 volumes:
   iam-data:
