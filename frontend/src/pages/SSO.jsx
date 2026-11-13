@@ -184,7 +184,7 @@ export default function SSO() {
           <CodeBlock lang="Coolify env for iam.assafwahinc.com" maxH="max-h-40">{`OIDC_ISSUER=https://keycloak.assafwahinc.com/realms/assafwah
 OIDC_CLIENT_ID=iam-projects
 OIDC_CLIENT_SECRET=<Clients → iam-projects → Credentials>`}</CodeBlock>
-          <p className="mt-2 text-xs text-zinc-500">Keycloak demo users: <span className="code">yusuf.ali</span>, <span className="code">omar.farouk</span>, <span className="code">sofia.alvarez</span> · password <span className="code">Demo!2026-Keycloak</span> · TOTP enrolment on first sign-in.</p>
+          <p className="mt-2 text-xs text-zinc-500">Keycloak demo users: <span className="code">yusuf.ali</span>, <span className="code">omar.farouk</span>, <span className="code">sofia.alvarez</span> · password <span className="code">test123</span> · TOTP enrolment on first sign-in.</p>
           <details className="mt-3">
             <summary className="cursor-pointer text-xs font-semibold text-zinc-400 hover:text-zinc-200">View realm-assafwah.json</summary>
             <CodeBlock lang="json" className="mt-2">{realm}</CodeBlock>

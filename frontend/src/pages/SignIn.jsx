@@ -172,7 +172,8 @@ export default function SignIn() {
             )}
           </div>
         </div>
-        <p className="mt-4 text-center text-[11px] text-zinc-500">Fictional users. Every attempt is written to the sign-in log on the Identity threat detection page.</p>
+        <p className="mt-4 text-center text-xs"><a href="/#login" className="font-semibold text-violet-300 hover:text-violet-200">← Other sign-in options</a></p>
+        <p className="mt-2 text-center text-[11px] text-zinc-500">Fictional users. Every attempt is written to the sign-in log on the Identity threat detection page.</p>
       </div>
     </div>
   )
