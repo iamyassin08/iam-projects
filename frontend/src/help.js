@@ -146,7 +146,7 @@ export const LABS = [
     summary: 'Script routine identity work: provisioning, deprovisioning and access reports through APIs, safely and repeatably.',
     platforms: 'Python or PowerShell with Microsoft Graph, Okta API or SCIM',
     steps: [
-      ['Pick Python or PowerShell', 'Both are in scripts/: iamctl.py and IamCtl.ps1.', 'automation', 'Automation → The scripts'],
+      ['Pick Python or PowerShell', 'Both are in backend/scripts/: iamctl.py and IamCtl.ps1.', 'automation', 'Automation → The scripts'],
       ['Connect to the IAM platform\'s API', 'Generate a SCIM token; the scripts use SCIM 2.0 and the REST API.', 'scim', 'SCIM 2.0 provisioning'],
       ['Script user creation and removal', 'iamctl.py sync (joiners, leavers) and offboard.', 'automation', 'Automation'],
       ['Automate role / group assignment from input data', 'Movers are applied by changing group membership from the HR CSV.', 'automation', 'Automation → HR feed'],

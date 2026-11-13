@@ -1,6 +1,6 @@
 # Keycloak (project 9): keycloak.assafwahinc.com
 
-`keycloak/realm-assafwah.json` is the identity provider as code: realm `assafwah`, one OIDC client for IAM Projects, roles from groups, MFA and lockout. No secrets are in the file: Keycloak generates the client secret on import.
+`backend/keycloak/realm-assafwah.json` is the identity provider as code: realm `assafwah`, one OIDC client for IAM Projects, roles from groups, MFA and lockout. No secrets are in the file: Keycloak generates the client secret on import.
 
 | Setting | Value | Why |
 |---|---|---|
@@ -19,7 +19,7 @@ Demo users: `yusuf.ali` (iam-admins), `omar.farouk` (engineering, approvers), `s
 ## Set it up on keycloak.assafwahinc.com (5 minutes)
 
 1. **Secure the admin account first.** Sign in to the admin console, open *master* realm → Users → your admin → Credentials → reset to a long unique password, and add OTP for the admin (Credentials → Set up authenticator). A public Keycloak with a guessable admin password will be found by scanners.
-2. **Import the realm.** Realm dropdown (top-left) → *Create realm* → *Browse* → `keycloak/realm-assafwah.json` → *Create*.
+2. **Import the realm.** Realm dropdown (top-left) → *Create realm* → *Browse* → `backend/keycloak/realm-assafwah.json` → *Create*.
 3. **Copy the client secret.** Realm `assafwah` → Clients → `iam-projects` → Credentials → copy *Client secret*.
 4. **Tell IAM Projects about it.** Coolify → IAM Projects → Environment variables:
 
@@ -40,7 +40,7 @@ Check it from a terminal: `curl https://keycloak.assafwahinc.com/realms/assafwah
 
 The realm also defines a SAML client, `saml-lab` (signed assertions, RSA-SHA256, NameID = email, `groups` and `Role` attributes).
 If you imported the realm before it existed, add it without touching anything else: realm `assafwah` → **Clients → Import client** →
-upload `keycloak/saml-lab-client.json` → Save. Point any SAML service provider at
+upload `backend/keycloak/saml-lab-client.json` → Save. Point any SAML service provider at
 `https://keycloak.assafwahinc.com/realms/assafwah/protocol/saml/descriptor` (IdP metadata), set the SP's ACS URL in the client,
 sign in as a demo user, and capture the assertion with the SAML-tracer browser extension.
 
@@ -55,7 +55,7 @@ sign in as a demo user, and capture the assertion with the SAML-tracer browser e
 ```bash
 docker compose --profile keycloak up -d keycloak     # http://localhost:8081, realm imported at start
 # copy the iam-projects client secret from the local admin console, then:
-cd server && OIDC_ISSUER=http://localhost:8081/realms/assafwah OIDC_CLIENT_ID=iam-projects OIDC_CLIENT_SECRET=<secret> go run .
+cd backend && OIDC_ISSUER=http://localhost:8081/realms/assafwah OIDC_CLIENT_ID=iam-projects OIDC_CLIENT_SECRET=<secret> go run .
 ```
 
 Run the Go server on the host for local Keycloak: the token `iss` must match the URL the browser used (`localhost:8081`).

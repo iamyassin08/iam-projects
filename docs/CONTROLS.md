@@ -1,6 +1,6 @@
 # Controls and framework mapping
 
-Each control is a read-only function over the current state (`runChecks` in [`server/lab.go`](../server/lab.go)). It runs on every request to `/api/lab/checks` and is unit-tested. A control passes when it produces no findings.
+Each control is a read-only function over the current state (`runChecks` in [`backend/lab.go`](../backend/lab.go)). It runs on every request to `/api/lab/checks` and is unit-tested. A control passes when it produces no findings.
 
 Mappings use NIST SP 800-53 Rev. 5 control identifiers, SOX IT general control (ITGC) areas, the HIPAA Security Rule (45 CFR 164) and CIS Controls v8. They show which requirement each check produces evidence for. They are not a claim of compliance.
 

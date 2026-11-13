@@ -17,7 +17,7 @@ var store *Store
 
 func main() {
 	dbPath := env("DATA_PATH", "./data/iam.json")
-	staticDir := env("STATIC_DIR", "../web/dist")
+	staticDir := env("STATIC_DIR", "../frontend/dist")
 	port := env("PORT", "8080")
 
 	var err error

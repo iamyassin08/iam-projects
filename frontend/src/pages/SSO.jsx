@@ -3,7 +3,7 @@ import { Fingerprint, LogIn, LogOut, Play, CheckCircle2, Server, Globe, External
 import { api } from '../api.js'
 import { useLoad, PageHeader, Card, Badge, Button, ErrorBox, Loading, Seg, toast, Avatar, Tooltip, usePreline } from '../ui.jsx'
 import { JWTView, ClaimsTable, Sequence, CodeBlock } from '../components.jsx'
-import realm from '../../../keycloak/realm-assafwah.json?raw'
+import realm from '../../../backend/keycloak/realm-assafwah.json?raw'
 
 export const OIDC_STEPS = [
   { from: 0, to: 1, label: 'GET /auth/login', note: 'The user clicks Sign in. The app (relying party) has no session yet.' },
@@ -175,7 +175,7 @@ export default function SSO() {
           </>}
         </Card>
 
-        <Card title="Keycloak (open-source IdP)" subtitle="Realm export in keycloak/realm-assafwah.json" actions={<a href="https://github.com/iamyassin08/iam-projects/blob/main/docs/KEYCLOAK.md" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-semibold text-violet-300">Setup guide <ExternalLink className="size-3" /></a>}>
+        <Card title="Keycloak (open-source IdP)" subtitle="Realm export in backend/keycloak/realm-assafwah.json" actions={<a href="https://github.com/iamyassin08/iam-projects/blob/main/docs/KEYCLOAK.md" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-semibold text-violet-300">Setup guide <ExternalLink className="size-3" /></a>}>
           <div className="mb-3 grid grid-cols-2 gap-2 text-xs">
             {[[Boxes, 'Realm', 'assafwah'], [Globe, 'Client', 'iam-projects (PKCE S256)'], [KeyRound, 'MFA', 'TOTP required action'], [Server, 'Lockout', '5 failures, 15 min max wait'], [CheckCircle2, 'Roles', 'iam-admin, approver (from groups)'], [Fingerprint, 'Events', 'login + admin events, 30 days']].map(([I, k, v]) => (
               <div key={k} className="flex items-start gap-2 rounded-lg border border-white/[0.06] bg-white/[0.02] p-2"><I className="mt-0.5 size-3.5 text-violet-300" /><div><div className="text-zinc-500">{k}</div><div className="text-zinc-200">{v}</div></div></div>

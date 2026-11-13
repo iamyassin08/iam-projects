@@ -2,7 +2,7 @@
 
 How projects 3, 4, 5, 7, 8 and 10 are built. All server code is Go standard library only.
 
-## Built-in OpenID Connect provider (`server/idp.go`, `server/jose.go`)
+## Built-in OpenID Connect provider (`backend/idp.go`, `backend/jose.go`)
 
 | Endpoint | Purpose |
 |---|---|
@@ -13,15 +13,15 @@ How projects 3, 4, 5, 7, 8 and 10 are built. All server code is Go standard libr
 | `POST /idp/token` | Client secret (basic or post), single-use 60 s code, redirect URI match, PKCE verifier → RS256 `id_token` + `access_token` |
 | `GET /idp/userinfo` | Bearer access token, verified |
 
-The console is the relying party (`server/sso.go`): `/auth/login` → state, nonce and PKCE verifier in an HMAC-signed HttpOnly cookie; `/auth/callback` checks state, redeems the code, verifies signature, `iss`, `aud`, `exp` and `nonce`, then issues an 8-hour session cookie. With `OIDC_ISSUER` set, the same code uses Keycloak's discovery and JWKS. A signed-in user is the `actor` on every audit entry. Revoking sessions (alert response, leaver, disabled user) invalidates cookies issued before that moment.
+The console is the relying party (`backend/sso.go`): `/auth/login` → state, nonce and PKCE verifier in an HMAC-signed HttpOnly cookie; `/auth/callback` checks state, redeems the code, verifies signature, `iss`, `aud`, `exp` and `nonce`, then issues an 8-hour session cookie. With `OIDC_ISSUER` set, the same code uses Keycloak's discovery and JWKS. A signed-in user is the `actor` on every audit entry. Revoking sessions (alert response, leaver, disabled user) invalidates cookies issued before that moment.
 
 Demo users share the password `Demo!2026`. TOTP secrets are deterministic for the demo so the in-app virtual authenticator works after a reset; real deployments use `newTOTPSecret()`.
 
-## Conditional Access (`server/conditional.go`)
+## Conditional Access (`backend/conditional.go`)
 
 Policies have assignments (include / exclude groups, apps), conditions (client app, countries, outside trusted countries, blocked IP list, sign-in risk, device) and a grant (block or MFA). States: on, report-only, off. Evaluation: block > MFA > allow; report-only results are logged, not enforced. `POST /api/ca/whatif` evaluates without signing in.
 
-## Sign-in log and detections (`server/signins.go`)
+## Sign-in log and detections (`backend/signins.go`)
 
 | Rule | Logic | ATT&CK |
 |---|---|---|
@@ -35,17 +35,17 @@ Policies have assignments (include / exclude groups, apps), conditions (client a
 
 Triage (`POST /api/monitoring/alerts/{id}`) requires notes to close, and can block the IP (CA006), revoke sessions, reset MFA or disable the user.
 
-## Credential vault (`server/vault.go`)
+## Credential vault (`backend/vault.go`)
 
 AES-256-GCM, key from `VAULT_KEY` (base64, 32 bytes) or `vault.key` (0600) next to the data file, never inside `iam.json`. Checkout needs: an active identity that **currently holds** the entitlement (JIT or standing), a reason, and a fresh TOTP from that person's MFA method. Exclusive, 30 minutes, then rotated by the expiry sweeper; check-in rotates immediately.
 
-## Cloud IAM (`server/cloudiam.go`)
+## Cloud IAM (`backend/cloudiam.go`)
 
 AWS evaluation subset: explicit Deny → implicit deny without an Allow → permissions boundary must also allow. `Action`/`NotAction`/`Resource` wildcards; `Bool`, `StringEquals`, `StringNotEquals`, `StringLike`, `IpAddress`, `NotIpAddress` on `aws:MultiFactorAuthPresent`, `aws:SourceIp`, `aws:RequestedRegion`. Not modelled: SCPs, resource-based policies, session policies. The linter flags `*:*`, service wildcards on `*`, `iam:PassRole` on `*`, Allow+NotAction and sensitive actions without MFA. Azure: role assignments by scope with permanent vs PIM-eligible.
 
-## Automation (`server/hrfeed.go`, `scripts/`)
+## Automation (`backend/hrfeed.go`, `backend/scripts/`)
 
-`POST /api/automation/hr-feed {csv, apply}` plans (and optionally applies) joiner / mover / update / leaver through the shared lifecycle functions. `scripts/iamctl.py` does the same over the public SCIM API (`sync`, `report`, `dormant`, `offboard`); `scripts/IamCtl.ps1` covers reporting and offboarding.
+`POST /api/automation/hr-feed {csv, apply}` plans (and optionally applies) joiner / mover / update / leaver through the shared lifecycle functions. `backend/scripts/iamctl.py` does the same over the public SCIM API (`sync`, `report`, `dormant`, `offboard`); `backend/scripts/IamCtl.ps1` covers reporting and offboarding.
 
 ## Environment variables
 

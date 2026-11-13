@@ -3,8 +3,8 @@ import { Terminal, Eye, Play, FileSpreadsheet, AlertTriangle, RotateCcw } from '
 import { api } from '../api.js'
 import { PageHeader, Card, Badge, Button, toast, ask, Seg } from '../ui.jsx'
 import { CodeBlock, Flow } from '../components.jsx'
-import py from '../../../scripts/iamctl.py?raw'
-import ps from '../../../scripts/IamCtl.ps1?raw'
+import py from '../../../backend/scripts/iamctl.py?raw'
+import ps from '../../../backend/scripts/IamCtl.ps1?raw'
 
 const tone = { joiner: 'ok', mover: 'info', update: 'violet', leaver: 'bad', noop: 'neutral', skip: 'warn', error: 'bad' }
 
@@ -90,7 +90,7 @@ export default function Automation() {
         </Card>
       </div>
 
-      <Card title="The scripts" subtitle="scripts/ in the repo · no dependencies to install" actions={<Seg value={lang} onChange={setLang} options={[{ value: 'py', label: 'iamctl.py' }, { value: 'ps', label: 'IamCtl.ps1' }, { value: 'run', label: 'Example run' }]} />}>
+      <Card title="The scripts" subtitle="backend/scripts/ in the repo · no dependencies to install" actions={<Seg value={lang} onChange={setLang} options={[{ value: 'py', label: 'iamctl.py' }, { value: 'ps', label: 'IamCtl.ps1' }, { value: 'run', label: 'Example run' }]} />}>
         {lang === 'py' && <CodeBlock lang="python" maxH="max-h-[520px]">{py}</CodeBlock>}
         {lang === 'ps' && <CodeBlock lang="powershell" maxH="max-h-[520px]">{ps}</CodeBlock>}
         {lang === 'run' && <CodeBlock lang="terminal">{SAMPLE_RUN}</CodeBlock>}

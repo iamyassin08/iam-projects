@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-// HR feed reconciliation: the same job scripts/iamctl.py does over the API,
+// HR feed reconciliation: the same job backend/scripts/iamctl.py does over the API,
 // built into the server so it can be previewed in the browser. Each CSV row is
 // compared with the directory and turned into a plan of joiner / mover /
 // update / leaver actions. Dry-run first, then apply through the one lifecycle
