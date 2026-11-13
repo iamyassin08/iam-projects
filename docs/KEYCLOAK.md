@@ -36,6 +36,14 @@ Demo users: `yusuf.ali` (iam-admins), `omar.farouk` (engineering, approvers), `s
 
 Check it from a terminal: `curl https://keycloak.assafwahinc.com/realms/assafwah/.well-known/openid-configuration` must return JSON whose `issuer` is exactly `https://keycloak.assafwahinc.com/realms/assafwah`. If it shows `http://` or an internal host, set `KC_HOSTNAME=https://keycloak.assafwahinc.com` and `KC_PROXY_HEADERS=xforwarded` on the Keycloak service.
 
+## SAML (project 9 asks for SAML and OIDC)
+
+The realm also defines a SAML client, `saml-lab` (signed assertions, RSA-SHA256, NameID = email, `groups` and `Role` attributes).
+If you imported the realm before it existed, add it without touching anything else: realm `assafwah` → **Clients → Import client** →
+upload `keycloak/saml-lab-client.json` → Save. Point any SAML service provider at
+`https://keycloak.assafwahinc.com/realms/assafwah/protocol/saml/descriptor` (IdP metadata), set the SP's ACS URL in the client,
+sign in as a demo user, and capture the assertion with the SAML-tracer browser extension.
+
 ## Production checklist
 
 - `start` (not `start-dev`), PostgreSQL, `KC_HOSTNAME`, `KC_PROXY_HEADERS=xforwarded`, `KC_HTTP_ENABLED=true` behind Coolify's TLS proxy.

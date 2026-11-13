@@ -46,6 +46,7 @@ func routes(staticDir string) *http.ServeMux {
 	mux.HandleFunc("GET /api/catalog", getCatalog)
 	mux.HandleFunc("GET /api/identities", getIdentities)
 	mux.HandleFunc("GET /api/identities/{id}/access", getIdentityAccess)
+	mux.HandleFunc("GET /api/access-check", getAccessCheck)
 	mux.HandleFunc("GET /api/jml/events", getJMLEvents)
 	mux.HandleFunc("POST /api/jml/joiner", postJoiner)
 	mux.HandleFunc("POST /api/jml/mover", postMover)

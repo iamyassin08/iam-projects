@@ -1,6 +1,34 @@
-import { Grid3x3, Star, Ban, Check } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Grid3x3, Star, Ban, Check, SearchCheck, CheckCircle2, XCircle } from 'lucide-react'
 import { api } from '../api.js'
-import { useLoad, PageHeader, Card, ErrorBox, Loading, ask, toast, usePreline, Badge } from '../ui.jsx'
+import { useLoad, PageHeader, Card, ErrorBox, Loading, ask, toast, usePreline, Badge, Field } from '../ui.jsx'
+
+function AccessChecker({ people, entitlements, systems }) {
+  const [q, setQ] = useState({ identityId: 'ID-3', entitlementId: 'erp-approve' })
+  const [res, setRes] = useState(null)
+  useEffect(() => { api.accessCheck(q.identityId, q.entitlementId).then(setRes).catch((e) => toast(e.message, 'err')) }, [q])
+  const sys = (id) => systems.find((s) => s.id === id)?.name || id
+  return (
+    <Card title="Access checker" subtitle="Test an edge case: can this person use this entitlement right now, and why?" delay={40}>
+      <div className="grid gap-4 lg:grid-cols-5">
+        <div className="space-y-3 lg:col-span-2">
+          <Field label="Person"><select className="input" value={q.identityId} onChange={(e) => setQ({ ...q, identityId: e.target.value })}>{people.map((p) => <option key={p.id} value={p.id}>{p.name}{p.status !== 'active' ? ' (terminated)' : ''}</option>)}</select></Field>
+          <Field label="Entitlement"><select className="input" value={q.entitlementId} onChange={(e) => setQ({ ...q, entitlementId: e.target.value })}>{entitlements.map((e) => <option key={e.id} value={e.id}>{sys(e.systemId)} · {e.name}{e.privileged ? ' ★' : ''}</option>)}</select></Field>
+        </div>
+        <div className="lg:col-span-3">
+          {res && <div key={q.identityId + q.entitlementId} className="space-y-2 animate-fade-in">
+            <div className={`flex items-center gap-2 rounded-xl border p-3 ${res.allowed ? 'border-emerald-500/30 bg-emerald-500/10' : 'border-rose-500/30 bg-rose-500/10'}`}>
+              {res.allowed ? <CheckCircle2 className="size-5 text-emerald-300" /> : <XCircle className="size-5 text-rose-300" />}
+              <span className="font-semibold text-white">{res.allowed ? 'Has access' : 'No access'}</span>{res.allowed && <Badge tone="violet">via {res.via}</Badge>}
+            </div>
+            <ul className="space-y-1 text-sm text-zinc-300">{res.reasons.map((r) => <li key={r}>{r}</li>)}</ul>
+            <p className="text-xs text-zinc-500">Next step: {res.nextStep}</p>
+          </div>}
+        </div>
+      </div>
+    </Card>
+  )
+}
 
 export default function RoleMatrix() {
   const [data, reload, error] = useLoad({ catalog: api.catalog, people: api.identities })
@@ -85,6 +113,7 @@ export default function RoleMatrix() {
           </table>
         </div>
       </Card>
+      <AccessChecker people={data.people} entitlements={entitlements} systems={systems} />
       <div className="flex flex-wrap gap-2 text-xs text-zinc-500">{sodRules.map((r) => <Badge key={r.id} tone="warn">{r.id}: {r.description}</Badge>)}</div>
     </div>
   )

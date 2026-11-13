@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   ShieldCheck, LayoutDashboard, Users, KeyRound, ClipboardCheck, Timer, Grid3x3, Network, Plug, Radar, ScrollText,
-  FlaskConical, Menu, Github, ExternalLink, BookOpen, Fingerprint, Smartphone, Vault as VaultIcon, Cloud as CloudIcon, Activity, Terminal, LogIn, PanelLeftClose, PanelLeftOpen,
+  FlaskConical, Menu, Github, ExternalLink, BookOpen, Fingerprint, Smartphone, Vault as VaultIcon, Cloud as CloudIcon, Activity, Terminal, LogIn, PanelLeftClose, PanelLeftOpen, LifeBuoy,
 } from 'lucide-react'
 import { Toaster, DialogHost, usePreline, closeModal } from './ui.jsx'
 import Overview from './pages/Overview.jsx'
@@ -16,6 +16,7 @@ import Risk from './pages/Risk.jsx'
 import Audit from './pages/Audit.jsx'
 import Lab from './pages/Lab.jsx'
 import Guide from './pages/Guide.jsx'
+import Help from './pages/Help.jsx'
 import SSO from './pages/SSO.jsx'
 import MFA from './pages/MFA.jsx'
 import Vault from './pages/Vault.jsx'
@@ -30,6 +31,7 @@ export const NAV = [
     group: 'Overview', items: [
       { id: 'home', label: 'Security posture', icon: LayoutDashboard, page: Overview },
       { id: 'guide', label: 'Project guide (start here)', icon: BookOpen, page: Guide },
+      { id: 'help', label: 'Help & lab guides', icon: LifeBuoy, page: Help },
     ],
   },
   {

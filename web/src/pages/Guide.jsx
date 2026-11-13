@@ -128,6 +128,7 @@ export default function Guide() {
           </div>
           <div className="mt-5 flex flex-wrap gap-2 print:hidden">
             <a href="#sso"><Button><ExternalLink className="size-4" /> Sign in and see SSO + MFA live</Button></a>
+            <a href="#help"><Button variant="ghost">Help & lab guides (AI mentor prompts)</Button></a>
             <a href="#lab"><Button variant="ghost">Controls lab: 20 audit controls</Button></a>
             <Button variant="subtle" onClick={() => window.print()}><Printer className="size-4" /> Print / PDF</Button>
           </div>

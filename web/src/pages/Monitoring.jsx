@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Activity, Siren, ShieldAlert, Globe2, Smartphone, ChevronDown, Search } from 'lucide-react'
-import { api, ago, fmtDate } from '../api.js'
+import { api, ago, fmtDate, downloadFile, toCSV } from '../api.js'
 import { useLoad, PageHeader, Card, Badge, Button, ErrorBox, Loading, Seg, toast, Stat, Modal, Field, openModal, closeModal, usePreline, levelTone, Empty } from '../ui.jsx'
 import { CodeBlock } from '../components.jsx'
 
@@ -130,7 +130,7 @@ export default function Monitoring() {
       </Card>
 
       <Card title="Sign-in log" subtitle="Newest first. Live entries come from the hosted sign-in page." pad={false}
-        actions={<><div className="relative"><Search className="absolute start-2.5 top-2.5 size-3.5 text-zinc-500" /><input className="input w-48 ps-8 text-xs" placeholder="user, IP, city, app" value={q} onChange={(e) => setQ(e.target.value)} /></div><Seg value={filter} onChange={setFilter} options={[{ value: 'all', label: 'All' }, { value: 'failed', label: 'Not success' }, { value: 'live', label: 'Live only' }]} /></>}>
+        actions={<><div className="relative"><Search className="absolute start-2.5 top-2.5 size-3.5 text-zinc-500" /><input className="input w-48 ps-8 text-xs" placeholder="user, IP, city, app" value={q} onChange={(e) => setQ(e.target.value)} /></div><Seg value={filter} onChange={setFilter} options={[{ value: 'all', label: 'All' }, { value: 'failed', label: 'Not success' }, { value: 'live', label: 'Live only' }]} /><Button size="sm" variant="ghost" onClick={() => downloadFile('signin-log.csv', toCSV(log, ['at', 'username', 'app', 'ip', 'city', 'country', 'device', 'client', 'result', 'reason', 'mfa', 'risk', 'source']), 'text/csv')}>Export CSV</Button></>}>
         <div className="max-h-[480px] overflow-auto">
           <table className="min-w-full">
             <thead className="sticky top-0 bg-zinc-900"><tr><th className="th">Time</th><th className="th">User</th><th className="th">App</th><th className="th">Location · IP</th><th className="th">Client</th><th className="th">Result</th><th className="th">MFA</th><th className="th">Risk</th></tr></thead>
